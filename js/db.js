@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'NiuHuihuiWorkstationDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const DB_STORES = [
   'plans',
@@ -14,6 +14,7 @@ const DB_STORES = [
   'budget',
   'englishSpeaking',
   'englishListening',
+  'englishVocab',
   'readingNotes',
   'reflections',
   'reviews',

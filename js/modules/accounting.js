@@ -17,36 +17,28 @@ Modules.accounting = {
   },
 
   async render() {
-    const budget = (await DB.getAll('budget'))[0] || { dailyBudget: 100, monthlyBudget: 3000 };
+    const budget = (await DB.getAll('budget'))[0] || { monthlyBudget: 5000 };
     const transactions = await DB.getAll('transactions');
     const today = Utils.todayStr();
-
-    const todayExpense = transactions.filter(t => t.date === today && t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
-    const todayIncome = transactions.filter(t => t.date === today && t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
-    const todayBalance = budget.dailyBudget - todayExpense + todayIncome;
 
     // 本月统计
     const monthIncome = transactions.filter(t => t.type === 'income' && Utils.isThisMonth(t.date)).reduce((s, t) => s + (t.amount || 0), 0);
     const monthExpense = transactions.filter(t => t.type === 'expense' && Utils.isThisMonth(t.date)).reduce((s, t) => s + (t.amount || 0), 0);
-    const monthBalance = monthIncome - monthExpense;
-    const savingRate = monthIncome > 0 ? ((monthBalance / monthIncome) * 100).toFixed(1) : 0;
+    // 月度结余 = 每月预算 - 本月支出（预算剩余）
+    const monthBudget = budget.monthlyBudget || 5000;
+    const monthBalance = monthBudget - monthExpense;
 
-    // 累计储蓄（本月结余）
-    const monthlySavings = Math.max(0, monthBalance);
+    document.getElementById('bc-monthlyBudget').textContent = Utils.formatMoney(monthBudget);
+    document.getElementById('bc-monthSpent').textContent = Utils.formatMoney(monthExpense);
+    document.getElementById('bc-monthBalance').textContent = Utils.formatMoney(monthBalance);
 
-    document.getElementById('bc-dailyBudget').textContent = Utils.formatMoney(budget.dailyBudget);
-    document.getElementById('bc-todaySpent').textContent = Utils.formatMoney(todayExpense);
-    document.getElementById('bc-todayBalance').textContent = Utils.formatMoney(todayBalance);
-    document.getElementById('bc-monthlySavings').textContent = Utils.formatMoney(monthlySavings);
-
-    const budgetPct = budget.dailyBudget ? Math.min(100, (todayExpense / budget.dailyBudget) * 100) : 0;
+    const budgetPct = monthBudget ? Math.min(100, (monthExpense / monthBudget) * 100) : 0;
     document.querySelector('.budget-fill').style.width = budgetPct + '%';
     document.getElementById('budgetText').textContent = budgetPct.toFixed(0) + '%';
 
     document.getElementById('stat-income').textContent = Utils.formatMoney(monthIncome);
     document.getElementById('stat-expense').textContent = Utils.formatMoney(monthExpense);
     document.getElementById('stat-balance').textContent = Utils.formatMoney(monthBalance);
-    document.getElementById('stat-savingRate').textContent = savingRate + '%';
 
     // 近7天支出趋势
     this.drawChart(transactions);
@@ -223,13 +215,12 @@ Modules.accounting = {
   },
 
   async setBudget() {
-    const budget = (await DB.getAll('budget'))[0] || { id: Utils.generateId('budget_'), dailyBudget: 100, monthlyBudget: 3000 };
+    const budget = (await DB.getAll('budget'))[0] || { id: Utils.generateId('budget_'), monthlyBudget: 5000 };
     UI.showCustomModal(
       '设置预算',
       `
-        <div class="form-group"><label>每日预算（元）</label><input type="number" id="bd-daily" value="${budget.dailyBudget}"></div>
-        <div class="form-group"><label>每月预算（元）</label><input type="number" id="bd-monthly" value="${budget.monthlyBudget}"></div>
-        <div class="form-group"><label>储蓄目标（元/月）</label><input type="number" id="bd-savings" value="${budget.savingsGoal || ''}"></div>
+        <div class="form-group"><label>每月预算（元）</label><input type="number" id="bd-monthly" value="${budget.monthlyBudget}" placeholder="例如：5000"></div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:8px">月度结余 = 每月预算 - 本月支出</p>
       `,
       `<div class="modal-actions">
         <button class="btn btn-outline" onclick="UI.closeModal()">取消</button>
@@ -240,9 +231,8 @@ Modules.accounting = {
 
   async saveBudget(id) {
     await DB.put('budget', {
-      id, dailyBudget: parseFloat(document.getElementById('bd-daily').value) || 0,
-      monthlyBudget: parseFloat(document.getElementById('bd-monthly').value) || 0,
-      savingsGoal: parseFloat(document.getElementById('bd-savings').value) || 0
+      id,
+      monthlyBudget: parseFloat(document.getElementById('bd-monthly').value) || 5000
     });
     UI.closeModal(); UI.toast('预算已保存', 'success'); this.render();
   },
@@ -458,29 +448,30 @@ Modules.accounting = {
               <span class="preview-value">${result.items.length} 条</span>
             </div>
             <div class="preview-stat income">
-              <span class="preview-label">收入合计</span>
+              <span class="preview-label">💰 收入 ${incomeItems.length} 笔</span>
               <span class="preview-value">${Utils.formatMoney(totalIncome)}</span>
             </div>
             <div class="preview-stat expense">
-              <span class="preview-label">支出合计</span>
+              <span class="preview-label">💸 支出 ${expenseItems.length} 笔</span>
               <span class="preview-value">${Utils.formatMoney(totalExpense)}</span>
             </div>
           </div>
           <div class="preview-table-wrap">
             <table class="preview-table">
-              <thead><tr><th>日期</th><th>类型</th><th>名称</th><th>金额</th><th>分类</th><th>渠道</th></tr></thead>
+              <thead><tr><th>日期</th><th>类型</th><th>名称</th><th>用途</th><th>金额</th><th>分类</th><th>渠道</th></tr></thead>
               <tbody>
                 ${result.items.slice(0, 20).map(x => `
                   <tr>
                     <td>${x.date}</td>
                     <td>${x.type === 'income' ? '💰收入' : '💸支出'}</td>
-                    <td title="${Utils.escapeHtml(x.title)}">${Utils.escapeHtml(x.title).substring(0, 15)}${x.title.length > 15 ? '...' : ''}</td>
+                    <td title="${Utils.escapeHtml(x.title)}">${Utils.escapeHtml(x.title).substring(0, 12)}${x.title.length > 12 ? '...' : ''}</td>
+                    <td><span class="tag-pill purpose">${Utils.escapeHtml(x.purpose || '')}</span></td>
                     <td class="${x.type}">${x.type === 'income' ? '+' : '-'}${Utils.formatMoney(x.amount)}</td>
                     <td>${x.category}</td>
                     <td><span class="tag-pill">${x.channel}</span></td>
                   </tr>
                 `).join('')}
-                ${result.items.length > 20 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">... 还有 ${result.items.length - 20} 条</td></tr>` : ''}
+                ${result.items.length > 20 ? `<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">... 还有 ${result.items.length - 20} 条</td></tr>` : ''}
               </tbody>
             </table>
           </div>
@@ -543,7 +534,7 @@ Modules.accounting = {
       await DB.put('transactions', {
         date: item.date, type: item.type, amount: item.amount,
         title: item.title, category: item.category, channel: item.channel,
-        note: item.note, platformTxId: item.platformTxId, source: item.source
+        note: item.note, purpose: item.purpose, platformTxId: item.platformTxId, source: item.source
       });
 
       if (item.platformTxId) existingTxIds.add(item.platformTxId);
@@ -575,7 +566,35 @@ Modules.accounting = {
     if (skipped > 0) msg += `，跳过 ${skipped} 条重复`;
     UI.toast(msg, 'success');
 
+    // 检查本月总支出是否正确
+    await this.checkMonthlyTotal();
+
     this.render();
     if (Modules.overview && Modules.overview.render) Modules.overview.render();
+  },
+
+  // 检查本月总支出是否合理
+  async checkMonthlyTotal() {
+    const transactions = await DB.getAll('transactions');
+    const monthExpense = transactions
+      .filter(t => t.type === 'expense' && Utils.isThisMonth(t.date))
+      .reduce((s, t) => s + (t.amount || 0), 0);
+    const monthIncome = transactions
+      .filter(t => t.type === 'income' && Utils.isThisMonth(t.date))
+      .reduce((s, t) => s + (t.amount || 0), 0);
+
+    const expenseList = transactions
+      .filter(t => t.type === 'expense' && Utils.isThisMonth(t.date))
+      .sort((a, b) => (b.amount || 0) - (a.amount || 0));
+
+    // 检查是否有异常大额支出（单笔超过月支出50%的可能异常）
+    const anomalies = expenseList.filter(t => t.amount > monthExpense * 0.5 && monthExpense > 0);
+    const anomalyHint = anomalies.length > 0
+      ? `\n⚠️ 发现 ${anomalies.length} 笔大额支出(>月支出50%)：${anomalies.slice(0, 3).map(t => t.title + ' ' + Utils.formatMoney(t.amount)).join('、')}`
+      : '';
+
+    if (monthExpense > 0) {
+      console.log(`[账单核对] 本月: 收入 ${Utils.formatMoney(monthIncome)}, 支出 ${Utils.formatMoney(monthExpense)}, 共 ${expenseList.length} 笔支出${anomalyHint}`);
+    }
   }
 };

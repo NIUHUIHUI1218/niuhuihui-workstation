@@ -327,6 +327,7 @@ const Utils = {
         date, type, amount,
         title,
         category: this.autoCategory(title, type),
+        purpose: this.detectPurpose(title, '', '导入'),
         channel: '导入',
         note: '',
         source: 'simple',
@@ -431,6 +432,7 @@ const Utils = {
         results.push({
           date, type, amount, title,
           category: this.autoCategory(title, type),
+          purpose: this.detectPurpose(title, '', '导入'),
           channel: '导入', note: '',
           source: 'pattern', platformTxId: ''
         });
@@ -557,6 +559,7 @@ const Utils = {
         amount,
         title,
         category: this.autoCategory(title, type),
+        purpose: this.detectPurpose(title, String(get('note') || ''), String(get('channel') || detectedSource)),
         channel: String(get('channel') || (detectedSource === 'alipay' ? '支付宝' : detectedSource === 'wechat' ? '微信' : '银行卡')).trim(),
         note: String(get('note') || '').trim(),
         source: detectedSource,
@@ -619,6 +622,35 @@ const Utils = {
     return '其他';
   },
 
+  // 智能检测用途（从标题和备注中推断）
+  detectPurpose(title, note, channel) {
+    const text = (title + ' ' + (note || '')).toLowerCase();
+    const purposes = [
+      { keywords: /外卖|美团|饿了么|点餐|取餐/, purpose: '外卖点餐' },
+      { keywords: /买菜|蔬菜|水果|生鲜|超市|便利店|日杂/, purpose: '日用品采购' },
+      { keywords: /地铁|公交|打车|滴滴|高铁|火车|机票|飞机|加油|停车/, purpose: '交通出行' },
+      { keywords: /房租|房贷|物业|水电|燃气|暖气/, purpose: '住房费用' },
+      { keywords: /淘宝|京东|拼多多|天猫|抖音|快手|小红书|购物/, purpose: '线上购物' },
+      { keywords: /服装|鞋|包|衣服|裤子|裙子|化妆品|护肤品/, purpose: '服饰美妆' },
+      { keywords: /医院|药|门诊|体检|医保/, purpose: '医疗健康' },
+      { keywords: /外卖|餐厅|饭店|食堂|吃饭|午餐|晚餐|早餐|小吃/, purpose: '餐饮' },
+      { keywords: /奶茶|咖啡|茶饮|星巴克|瑞幸|喜茶/, purpose: '饮品甜点' },
+      { keywords: /电影|KTV|演出|演唱会|游戏|旅游|景点|酒店/, purpose: '休闲娱乐' },
+      { keywords: /书|课程|培训|学习|考试|报名/, purpose: '学习提升' },
+      { keywords: /话费|宽带|流量|网络|套餐/, purpose: '通讯网络' },
+      { keywords: /理财|基金|股票|保险|黄金/, purpose: '投资理财' },
+      { keywords: /转账|汇款|红包/, purpose: '转账红包' },
+      { keywords: /数码|手机|电脑|耳机|平板|电器/, purpose: '数码电器' },
+      { keywords: /宠物|猫|狗|猫粮|狗粮/, purpose: '宠物' },
+      { keywords: /运动|健身|瑜伽|游泳/, purpose: '运动健身' },
+      { keywords: /理发|美容|美甲|spa|按摩/, purpose: '美容美发' },
+    ];
+    for (const { keywords, purpose } of purposes) {
+      if (keywords.test(text)) return purpose;
+    }
+    return '日常消费';
+  },
+
   // ============ Excel 账单解析器 ============
 
   // 从 ArrayBuffer 读取 Excel 并转为二维数组
@@ -661,5 +693,103 @@ const Utils = {
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('navOverlay').classList.remove('active');
     }
+  },
+
+  // ============ AI 助手（支持 OpenAI 兼容 API） ============
+  // 从 settings 获取 AI 配置
+  async getAIConfig() {
+    return {
+      enabled: await DB.getSettings('aiEnabled', false),
+      apiKey: await DB.getSettings('aiApiKey', ''),
+      apiUrl: await DB.getSettings('aiApiUrl', 'https://api.deepseek.com/v1/chat/completions'),
+      model: await DB.getSettings('aiModel', 'deepseek-chat')
+    };
+  },
+
+  // 调用 AI 接口
+  async callAI(messages, options = {}) {
+    const config = await this.getAIConfig();
+    if (!config.enabled || !config.apiKey) {
+      throw new Error('AI未配置，请在设置中配置API Key');
+    }
+    try {
+      const res = await fetch(config.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + config.apiKey
+        },
+        body: JSON.stringify({
+          model: config.model,
+          messages,
+          temperature: options.temperature || 0.7,
+          max_tokens: options.maxTokens || 2000
+        })
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error('AI调用失败: ' + res.status + ' ' + err.substring(0, 100));
+      }
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || '';
+    } catch (e) {
+      console.error('[AI] 调用失败:', e);
+      throw e;
+    }
+  },
+
+  // AI 分析图片内容并生成总结和方法论
+  async aiAnalyzeMedia(type, content, imageBase64 = null) {
+    let prompt = '';
+    if (type === 'image' && imageBase64) {
+      prompt = `请分析这张图片的内容，然后：
+1. 用简洁的语言（1-2句话）总结图片中的核心内容或主题
+2. 从内容中提炼出1-2个可复用的思维模型或方法论（每个用一句话概括）
+请用以下JSON格式回复：
+{
+  "summary": "图片内容总结",
+  "methods": ["方法论1", "方法论2"]
+}`;
+      const messages = [
+        { role: 'user', content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: imageBase64 } }
+        ]}
+      ];
+      return await this.callAI(messages, { maxTokens: 1000 });
+    } else if (type === 'video' && content) {
+      prompt = `请根据以下视频链接/描述："${content}"，完成以下任务：
+1. 用简洁的语言（1-2句话）推断并总结该视频可能的核心内容
+2. 从内容中提炼出1-2个可复用的思维模型或方法论（每个用一句话概括）
+请用以下JSON格式回复：
+{
+  "summary": "视频内容总结",
+  "methods": ["方法论1", "方法论2"]
+}`;
+      return await this.callAI([{ role: 'user', content: prompt }], { maxTokens: 1000 });
+    }
+    return null;
+  },
+
+  // AI 分析岗位JD并总结技能和思维
+  async aiAnalyzeJD(jobTitle, company, requirements) {
+    const prompt = `请根据以下岗位信息分析需要学习的技能和思维：
+
+岗位：${jobTitle}
+公司：${company}
+JD要求：${requirements}
+
+请输出：
+1. 该岗位需要的核心技术/硬技能（列举3-5项）
+2. 需要的思维方式和软技能（列举3-5项）
+3. 建议的学习路径或资源方向（简要说明）
+
+请用以下JSON格式回复：
+{
+  "hardSkills": ["技能1", "技能2", ...],
+  "softSkills": ["思维方式1", "思维方式2", ...],
+  "learningPath": "建议的学习路径"
+}`;
+    return await this.callAI([{ role: 'user', content: prompt }], { maxTokens: 1500 });
   }
 };

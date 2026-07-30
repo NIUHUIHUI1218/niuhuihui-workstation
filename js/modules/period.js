@@ -193,7 +193,13 @@ Modules.news = {
     const all = await DB.getAll('newsPodcast');
     let list = all.slice().sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
     const today = Utils.todayStr();
-    if (this.podcastFilter === 'today') list = list.filter(i => i.pubDate?.startsWith(today));
+    if (this.podcastFilter === 'today') {
+      const todayList = list.filter(i => i.pubDate?.startsWith(today));
+      // 如果今日内容不足10条，用最近内容补足
+      list = todayList.length >= 10 ? todayList : [...todayList, ...list.filter(i => !i.pubDate?.startsWith(today))].slice(0, 10);
+    } else {
+      list = list.slice(0, 30);
+    }
     if (this.podcastFilter === 'unlistened') list = list.filter(i => i.status !== 'read');
     if (this.podcastFilter === 'fav') list = list.filter(i => i.favorite);
 
@@ -217,7 +223,7 @@ Modules.news = {
 
   async renderCoffee() {
     const all = await DB.getAll('newsCoffee');
-    const list = all.slice().sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate)).slice(0, 30);
+    const list = all.slice().sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate)).slice(0, 50);
     document.getElementById('newsList-coffee').innerHTML = list.length === 0
       ? '<p class="empty-hint">暂无早咖啡内容</p>'
       : list.map(i => `

@@ -25,6 +25,7 @@ window.UI = {
 
   switchModule(name) {
     this.currentModule = name;
+    localStorage.setItem('nhh_currentModule', name);
     Utils.scrollToModule(name);
     const mod = Modules[name];
     if (mod && mod.render) mod.render();
@@ -96,7 +97,8 @@ window.UI = {
   },
 
   // 设置面板
-  showSettings() {
+  async showSettings() {
+    const aiConfig = await Utils.getAIConfig();
     this.showCustomModal('⚙️ 设置', `
       <div class="settings-section">
         <h4>GitHub 云同步配置</h4>
@@ -104,6 +106,16 @@ window.UI = {
         <input class="settings-input" id="set-owner" placeholder="GitHub 用户名/组织" value="${Sync.owner}">
         <input class="settings-input" id="set-repo" placeholder="仓库名" value="${Sync.repo}">
         <p style="font-size:11px;color:var(--text-muted)">配置后数据将自动备份到仓库 data-sync 分支</p>
+      </div>
+      <div class="settings-section">
+        <h4>🤖 AI 助手配置（可选）</h4>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">用于每日感悟的图片/视频AI分析、求职JD技能总结。支持 DeepSeek / 通义千问 / OpenAI 兼容API。</p>
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <input type="checkbox" id="set-ai-enabled" ${aiConfig.enabled ? 'checked' : ''}> 启用AI助手
+        </label>
+        <input class="settings-input" id="set-ai-key" type="password" placeholder="API Key" value="${aiConfig.apiKey}">
+        <input class="settings-input" id="set-ai-url" placeholder="API地址（默认DeepSeek）" value="${aiConfig.apiUrl}">
+        <input class="settings-input" id="set-ai-model" placeholder="模型名称" value="${aiConfig.model}">
       </div>
       <div class="settings-section">
         <h4>数据管理</h4>
@@ -125,6 +137,13 @@ window.UI = {
     const owner = document.getElementById('set-owner').value.trim();
     const repo = document.getElementById('set-repo').value.trim();
     await Sync.saveConfig(token, owner, repo);
+
+    // 保存 AI 配置
+    await DB.setSettings('aiEnabled', document.getElementById('set-ai-enabled').checked);
+    await DB.setSettings('aiApiKey', document.getElementById('set-ai-key').value.trim());
+    await DB.setSettings('aiApiUrl', document.getElementById('set-ai-url').value.trim() || 'https://api.deepseek.com/v1/chat/completions');
+    await DB.setSettings('aiModel', document.getElementById('set-ai-model').value.trim() || 'deepseek-chat');
+
     UI.toast('配置已保存', 'success');
     this.closeModal();
   },
@@ -315,6 +334,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 渲染总览
     await Modules.overview.render();
+    
+    // 恢复上次停留的模块
+    const savedModule = localStorage.getItem('nhh_currentModule');
+    if (savedModule && Modules[savedModule] && savedModule !== 'overview') {
+      UI.switchModule(savedModule);
+    }
     
     UI._ready = true;
     console.log('[WorkStation] ✅ System ready - all modules loaded');

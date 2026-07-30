@@ -68,10 +68,12 @@ async function fetchCoffee() {
 }
 
 async function fetchFinance() {
-  // 多个财经 RSS
+  // 多个财经 RSS（增加更多源以确保至少10条）
   const urls = [
     process.env.FINANCE_RSS_1 || 'https://www.cls.cn/rss/finance',
-    process.env.FINANCE_RSS_2 || 'https://www.36kr.com/feed'
+    process.env.FINANCE_RSS_2 || 'https://www.36kr.com/feed',
+    process.env.FINANCE_RSS_3 || 'https://rss.cninfo.com.cn/rss',
+    process.env.FINANCE_RSS_4 || 'https://feedx.net/rss/caijing.xml'
   ];
   const all = [];
   for (const url of urls) {

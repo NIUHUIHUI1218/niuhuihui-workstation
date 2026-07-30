@@ -6,7 +6,7 @@
 <title>牛慧慧专属一体化工作台</title>
 <link rel="icon" type="image/png" href="favicon-cow.png">
 <link rel="apple-touch-icon" href="icon-cow.png">
-<link rel="stylesheet" href="css/style.css?v=20260730-5">
+<link rel="stylesheet" href="css/style.css?v=20260730-6">
 </head>
 <body>
 <!-- 顶部栏（手机端显示） -->
@@ -197,23 +197,19 @@
         <button class="btn btn-accent" onclick="Modules.accounting.showImportDialog()">📥 导入账单</button>
       </div>
     </div>
-    <!-- 存钱计划 -->
+    <!-- 月度预算 -->
     <div class="budget-cards" id="budgetCards">
       <div class="budget-card">
-        <div class="bc-label">今日预算</div>
-        <div class="bc-value" id="bc-dailyBudget">¥0</div>
+        <div class="bc-label">每月预算</div>
+        <div class="bc-value" id="bc-monthlyBudget">¥0</div>
       </div>
       <div class="budget-card">
-        <div class="bc-label">今日已支出</div>
-        <div class="bc-value danger" id="bc-todaySpent">¥0</div>
+        <div class="bc-label">本月已支出</div>
+        <div class="bc-value danger" id="bc-monthSpent">¥0</div>
       </div>
       <div class="budget-card">
-        <div class="bc-label">今日结余</div>
-        <div class="bc-value success" id="bc-todayBalance">¥0</div>
-      </div>
-      <div class="budget-card">
-        <div class="bc-label">本月累计储蓄</div>
-        <div class="bc-value primary" id="bc-monthlySavings">¥0</div>
+        <div class="bc-label">月度结余</div>
+        <div class="bc-value success" id="bc-monthBalance">¥0</div>
       </div>
     </div>
     <div class="budget-progress">
@@ -233,10 +229,6 @@
       <div class="stat-card">
         <div class="stat-label">月度结余</div>
         <div class="stat-value" id="stat-balance">¥0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">储蓄率</div>
-        <div class="stat-value" id="stat-savingRate">0%</div>
       </div>
     </div>
     <div class="chart-container">
@@ -258,34 +250,45 @@
   <section class="module-page" id="page-english">
     <div class="page-header">
       <h2>📖 英语学习</h2>
+      <button class="btn btn-outline" onclick="Modules.english.refreshHot()">🔄 刷新热门素材</button>
     </div>
     <div class="english-tabs">
       <button class="etab active" data-sub="speaking">🗣️ 每日口语</button>
       <button class="etab" data-sub="listening">👂 每日听力</button>
+      <button class="etab" data-sub="vocab">📝 单词学习</button>
     </div>
+    <!-- 每日口语 -->
     <div class="english-sub" id="english-speaking">
       <div class="sub-header">
         <h3>每日口语练习</h3>
         <button class="btn btn-primary" onclick="Modules.english.showAddDialog('speaking')">+ 新增素材</button>
+        <button class="btn btn-outline" onclick="Modules.english.showImportDialog('speaking')">📥 导入素材</button>
+      </div>
+      <div class="english-cat-tabs">
+        <button class="ecat-btn active" data-cat="all">全部</button>
+        <button class="ecat-btn" data-cat="work">💼 工作</button>
+        <button class="ecat-btn" data-cat="daily">🏠 日常</button>
       </div>
       <div class="source-tabs">
-        <button class="stab active" data-source="auto">系统抓取</button>
+        <button class="stab active" data-source="auto">热门素材</button>
         <button class="stab" data-source="manual">手动录入</button>
-      </div>
-      <div class="english-filter-bar">
-        <button class="efilter-btn active" data-filter="all">全部</button>
-        <button class="efilter-btn" data-filter="business">商务英语</button>
-        <button class="efilter-btn" data-filter="daily">日常英语</button>
       </div>
       <div class="english-list" id="englishList-speaking"></div>
     </div>
+    <!-- 每日听力 -->
     <div class="english-sub" id="english-listening" style="display:none">
       <div class="sub-header">
         <h3>每日听力练习</h3>
         <button class="btn btn-primary" onclick="Modules.english.showAddDialog('listening')">+ 新增素材</button>
+        <button class="btn btn-outline" onclick="Modules.english.showImportDialog('listening')">📥 导入素材</button>
+      </div>
+      <div class="english-cat-tabs">
+        <button class="ecat-btn active" data-cat="all">全部</button>
+        <button class="ecat-btn" data-cat="work">💼 工作</button>
+        <button class="ecat-btn" data-cat="daily">🏠 日常</button>
       </div>
       <div class="source-tabs">
-        <button class="stab active" data-source="auto">系统抓取</button>
+        <button class="stab active" data-source="auto">热门素材</button>
         <button class="stab" data-source="manual">手动录入</button>
       </div>
       <div class="english-filter-bar">
@@ -296,6 +299,25 @@
       </div>
       <div class="english-list" id="englishList-listening"></div>
     </div>
+    <!-- 单词学习 -->
+    <div class="english-sub" id="english-vocab" style="display:none">
+      <div class="sub-header">
+        <h3>单词学习</h3>
+        <button class="btn btn-primary" onclick="Modules.english.showAddDialog('vocab')">+ 新增单词</button>
+        <button class="btn btn-outline" onclick="Modules.english.showImportDialog('vocab')">📥 导入单词表</button>
+      </div>
+      <div class="source-tabs">
+        <button class="stab active" data-source="auto">热门单词</button>
+        <button class="stab" data-source="manual">手动录入</button>
+      </div>
+      <div class="english-filter-bar">
+        <button class="efilter-btn active" data-filter="all">全部</button>
+        <button class="efilter-btn" data-filter="new">未学</button>
+        <button class="efilter-btn" data-filter="learning">学习中</button>
+        <button class="efilter-btn" data-filter="mastered">已掌握</button>
+      </div>
+      <div class="english-list" id="englishList-vocab"></div>
+    </div>
   </section>
 
   <!-- ==================== 读书笔记 ==================== -->
@@ -304,23 +326,30 @@
       <h2>📚 读书笔记</h2>
       <div class="header-actions">
         <button class="btn btn-primary" onclick="Modules.reading.showAddDialog()">+ 新增笔记</button>
-        <button class="btn btn-outline" onclick="Modules.reading.showNewBook()">📖 新建书单</button>
+        <button class="btn btn-outline" onclick="Modules.reading.refreshBooks()">🔄 刷新书单</button>
       </div>
     </div>
-    <div class="reading-search-bar">
-      <input type="text" id="readingSearch" placeholder="🔍 搜索全部笔记..." oninput="Modules.reading.search()">
-      <select id="readingTagFilter" onchange="Modules.reading.render()">
-        <option value="all">全部分类</option>
-        <option value="摘抄金句">摘抄金句</option>
-        <option value="读后感悟">读后感悟</option>
-        <option value="章节备注">章节备注</option>
-      </select>
-      <select id="readingBookFilter" onchange="Modules.reading.render()">
-        <option value="all">全部书籍</option>
-      </select>
-    </div>
-    <div class="reading-grid" id="readingGrid">
-      <p class="empty-hint">📚 暂无读书笔记，开始记录吧</p>
+    <div class="reading-dual">
+      <!-- 左侧书单 -->
+      <div class="reading-left">
+        <div class="reading-left-header">
+          <h3>📖 书单</h3>
+          <button class="btn btn-sm btn-outline" onclick="Modules.reading.showNewBook()">+ 新建</button>
+        </div>
+        <div class="reading-book-list" id="readingBookList">
+          <p class="empty-hint">暂无书单</p>
+        </div>
+      </div>
+      <!-- 右侧笔记 -->
+      <div class="reading-right">
+        <div class="reading-right-header">
+          <h3 id="readingNoteBookTitle">📝 选择一本书查看笔记</h3>
+          <input type="text" id="readingSearch" class="reading-search-inline" placeholder="🔍 搜索当前书籍笔记..." oninput="Modules.reading.renderNotes()">
+        </div>
+        <div class="reading-notes-list" id="readingNotesList">
+          <p class="empty-hint">👈 请先从左侧选择一本书</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -537,19 +566,19 @@
   </div>
 </div>
 
-<script src="js/libs/xlsx.full.min.js?v=20260730-5"></script>
-<script src="js/db.js?v=20260730-5"></script>
-<script src="js/utils.js?v=20260730-5"></script>
-<script src="js/sync.js?v=20260730-5"></script>
-<script src="js/modules/overview.js?v=20260730-5"></script>
-<script src="js/modules/fitness.js?v=20260730-5"></script>
-<script src="js/modules/accounting.js?v=20260730-5"></script>
-<script src="js/modules/english.js?v=20260730-5"></script>
-<script src="js/modules/reading.js?v=20260730-5"></script>
-<script src="js/modules/reflection.js?v=20260730-5"></script>
-<script src="js/modules/jobs.js?v=20260730-5"></script>
-<script src="js/modules/period.js?v=20260730-5"></script>
-<script src="js/app.js?v=20260730-5"></script>
+<script src="js/libs/xlsx.full.min.js?v=20260730-6"></script>
+<script src="js/db.js?v=20260730-6"></script>
+<script src="js/utils.js?v=20260730-6"></script>
+<script src="js/sync.js?v=20260730-6"></script>
+<script src="js/modules/overview.js?v=20260730-6"></script>
+<script src="js/modules/fitness.js?v=20260730-6"></script>
+<script src="js/modules/accounting.js?v=20260730-6"></script>
+<script src="js/modules/english.js?v=20260730-6"></script>
+<script src="js/modules/reading.js?v=20260730-6"></script>
+<script src="js/modules/reflection.js?v=20260730-6"></script>
+<script src="js/modules/jobs.js?v=20260730-6"></script>
+<script src="js/modules/period.js?v=20260730-6"></script>
+<script src="js/app.js?v=20260730-6"></script>
 
 <!-- 诊断脚本：验证所有模块是否正确加载 -->
 <script>

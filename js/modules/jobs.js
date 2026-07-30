@@ -56,17 +56,26 @@ Modules.jobs = {
       ? '<p class="empty-hint">技能覆盖良好，继续加油！</p>'
       : `<div class="skill-gap-list">${gaps.map(g => `<span>${Utils.escapeHtml(g)}</span>`).join('')}</div>`;
 
-    // 推荐岗位
-    const targetSalary = (profile.currentSalary || 0) * 2;
-    const list = allJobs.filter(j => !targetSalary || (j.salary || 0) >= targetSalary).slice(0, 20);
+    // 推荐岗位：展示所有岗位（按薪资降序），不再设薪资门槛
+    const allJobsSorted = allJobs.slice().sort((a, b) => (b.salary || 0) - (a.salary || 0));
+    const list = allJobsSorted.slice(0, 50);
     document.getElementById('jobsList').innerHTML = list.length === 0
-      ? '<p class="empty-hint">暂无匹配岗位，可手动添加或等待每日8点自动刷新</p>'
+      ? '<p class="empty-hint">暂无匹配岗位，可手动添加或点击刷新从云端获取</p>'
       : list.map(j => `
         <div class="job-card">
-          <div class="job-title">${Utils.escapeHtml(j.title)} · ${Utils.escapeHtml(j.company)}</div>
-          <div class="job-salary">薪资：${Utils.formatMoney(j.salary)}/月</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">要求：${(j.skills || []).map(s => `<span class="tag-pill">${Utils.escapeHtml(s)}</span>`).join('')}</div>
-          <div style="margin-top:8px">${j.requirements ? Utils.escapeHtml(j.requirements.substring(0, 120)) : ''}</div>
+          <div class="job-title">${Utils.escapeHtml(j.title)} · <span style="color:var(--purple)">${Utils.escapeHtml(j.company)}</span></div>
+          <div class="job-salary">💰 薪资：${Utils.formatMoney(j.salary)}/月</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">
+            技能要求：${(j.skills || []).map(s => `<span class="tag-pill">${Utils.escapeHtml(s)}</span>`).join('')}
+            ${(!j.skills || j.skills.length === 0) ? '<span class="tag-pill">通用</span>' : ''}
+          </div>
+          ${j.requirements ? `<div class="job-req" style="margin-top:8px;font-size:12px;color:var(--text-secondary);line-height:1.5">${Utils.escapeHtml(j.requirements.substring(0, 200))}${j.requirements.length > 200 ? '...' : ''}</div>` : ''}
+          ${j.jdAnalysis ? `<div class="ref-ai-block" style="margin-top:8px"><div class="ref-ai-summary"><strong>🤖 JD分析：</strong><br>硬技能：${(j.jdAnalysis.hardSkills || []).map(s => `<span class="tag-pill">${Utils.escapeHtml(s)}</span>`).join('')}<br>软技能/思维：${(j.jdAnalysis.softSkills || []).map(s => `<span class="tag-pill" style="background:var(--cyan-light);color:var(--cyan)">${Utils.escapeHtml(s)}</span>`).join('')}<br>学习路径：${Utils.escapeHtml(j.jdAnalysis.learningPath || '')}</div></div>` : ''}
+          <div class="ec-actions" style="margin-top:8px">
+            ${!j.jdAnalysis ? `<button class="btn btn-sm btn-outline" onclick="Modules.jobs.aiAnalyzeJD('${j.id}')">🤖 AI分析JD</button>` : `<button class="btn btn-sm btn-outline" onclick="Modules.jobs.aiAnalyzeJD('${j.id}')">🔄 重新分析</button>`}
+            <button class="btn btn-sm btn-outline" onclick="Modules.jobs.addToPlan('${j.id}')">📅 加入计划</button>
+            <button class="btn btn-sm btn-danger-outline" onclick="Modules.jobs.delJob('${j.id}')">🗑️</button>
+          </div>
         </div>
       `).join('');
 
@@ -250,5 +259,50 @@ Modules.jobs = {
       }
       this.renderInterview();
     } catch (e) { console.error('loadAutoData interview', e); }
+  },
+
+  // AI 分析 JD
+  async aiAnalyzeJD(id) {
+    const job = await DB.get('jobs', id);
+    if (!job) return;
+    UI.toast('正在AI分析岗位JD...');
+    try {
+      const result = await Utils.aiAnalyzeJD(job.title, job.company, job.requirements || job.skills?.join(', ') || '');
+      if (!result) { UI.toast('AI未返回结果', 'error'); return; }
+      try {
+        const json = JSON.parse(result.replace(/```json\n?|```/g, '').trim());
+        job.jdAnalysis = {
+          hardSkills: json.hardSkills || [],
+          softSkills: json.softSkills || [],
+          learningPath: json.learningPath || ''
+        };
+      } catch (e) {
+        job.jdAnalysis = { hardSkills: [], softSkills: [], learningPath: result };
+      }
+      await DB.put('jobs', job);
+      UI.toast('JD分析完成', 'success');
+      this.renderSearch();
+    } catch (e) {
+      UI.toast('AI分析失败：' + e.message, 'error');
+    }
+  },
+
+  // 删除岗位
+  async delJob(id) {
+    if (!confirm('确定删除该岗位？')) return;
+    await DB.delete('jobs', id);
+    this.renderSearch();
+  },
+
+  // 岗位加入计划
+  async addToPlan(id) {
+    const job = await DB.get('jobs', id);
+    if (!job) return;
+    await DB.put('plans', {
+      type: 'work', title: `研究岗位：${job.title}@${job.company}`,
+      status: 'todo', date: Utils.todayStr()
+    });
+    UI.toast('已加入今日计划', 'success');
+    Modules.overview.render();
   }
 };
