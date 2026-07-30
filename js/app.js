@@ -2,8 +2,6 @@
  * 牛慧慧专属一体化工作台 - 主应用控制器
  */
 
-const Modules = {};
-
 const UI = {
   currentModule: 'overview',
 

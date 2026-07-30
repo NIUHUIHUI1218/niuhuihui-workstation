@@ -2,6 +2,9 @@
  * 牛慧慧专属一体化工作台 - 通用工具函数
  */
 
+// 全局模块容器，必须在所有 module 脚本之前声明
+const Modules = {};
+
 const Utils = {
   generateId(prefix = '') {
     return prefix + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
