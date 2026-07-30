@@ -236,8 +236,8 @@ Modules.english = {
         </div>
         <div class="form-group" id="eng-import-file" style="display:none">
           <label>上传文件</label>
-          <input type="file" id="eng-import-file-input" accept=".txt,.csv,.json,.md">
-          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">支持 txt/csv/json/md 格式的素材文件</p>
+          <input type="file" id="eng-import-file-input" accept=".txt,.csv,.json,.md,.pdf,.xlsx,.xls">
+          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">支持 txt/csv/json/md/pdf/xlsx/xls 格式的素材文件<br>PDF/Excel 仅单词导入可用</p>
         </div>
         ${sub !== 'vocab' ? `
         <div class="form-group">
@@ -279,24 +279,120 @@ Modules.english = {
     } else {
       const fileInput = document.getElementById('eng-import-file-input');
       if (!fileInput.files[0]) { UI.toast('请选择文件'); return; }
-      const text = await fileInput.files[0].text();
+      const file = fileInput.files[0];
+      const fileName = file.name;
+
       if (sub === 'vocab') {
-        // 简单单词表解析：每行 word,definition,example
-        const lines = text.trim().split('\n');
-        for (const line of lines) {
-          const parts = line.split(',').map(s => s.trim()).filter(Boolean);
-          if (parts.length >= 2) {
-            await DB.put(store, {
-              source: 'manual', word: parts[0], definition: parts[1],
-              example: parts[2] || '', status: 'new', createdAt: Date.now()
-            });
+        let rows = []; // 每行：[word, definition, example?]
+        const ext = fileName.split('.').pop().toLowerCase();
+
+        if (ext === 'xlsx' || ext === 'xls') {
+          // Excel 单词表：第1列=单词, 第2列=释义, 第3列=例句(可选)
+          const ab = await file.arrayBuffer();
+          const wb = XLSX.read(ab, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          for (const row of data) {
+            if (!row || row.length < 2) continue;
+            const word = String(row[0] || '').trim();
+            const def = String(row[1] || '').trim();
+            if (!word || !def) continue;
+            // 跳过表头行
+            if (/^单词|^word|^词汇|^英语|^序号|^English/i.test(word)) continue;
+            rows.push([word, def, String(row[2] || '').trim()]);
+          }
+        } else if (ext === 'pdf') {
+          // PDF 单词表：提取文本后按行解析
+          try {
+            UI.toast('正在解析PDF文件...', 'info');
+            const ab = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const content = await page.getTextContent();
+              const texts = content.items.map(item => item.str);
+              fullText += texts.join(' ') + '\n';
+            }
+            const lines = fullText.trim().split('\n').map(l => l.trim()).filter(Boolean);
+            for (const line of lines) {
+              // 尝试多种分隔符：逗号、制表符、多个空格
+              let parts = [];
+              if (line.includes('\t')) {
+                parts = line.split('\t').map(s => s.trim()).filter(Boolean);
+              } else if (line.includes(',')) {
+                parts = line.split(',').map(s => s.trim()).filter(Boolean);
+              } else {
+                // 用2个以上空格分隔
+                parts = line.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+              }
+              if (parts.length >= 2) {
+                const word = parts[0];
+                const def = parts[1];
+                if (word.length < 50 && def.length < 200) {
+                  rows.push([word, def, parts[2] || '']);
+                }
+              }
+            }
+          } catch (pdfErr) {
+            console.error('PDF解析失败:', pdfErr);
+            UI.toast('PDF解析失败，请确认文件是否损坏', 'error');
+            return;
+          }
+        } else {
+          // txt/csv/json/md 格式
+          const text = await file.text();
+          if (ext === 'json') {
+            try {
+              const data = JSON.parse(text);
+              const arr = Array.isArray(data) ? data : (data.words || data.vocabulary || []);
+              for (const item of arr) {
+                if (typeof item === 'object') {
+                  rows.push([item.word || item.en || '', item.definition || item.meaning || item.zh || '', item.example || item.sentence || '']);
+                } else if (typeof item === 'string') {
+                  const parts = item.split(/[,，\t]/).map(s => s.trim()).filter(Boolean);
+                  if (parts.length >= 2) rows.push([parts[0], parts[1], parts[2] || '']);
+                }
+              }
+            } catch (e) { UI.toast('JSON格式无效', 'error'); return; }
+          } else {
+            // txt/csv/md: 按行解析
+            const lines = text.trim().split('\n');
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+              // 跳过 markdown 标题、列表标记
+              const clean = trimmed.replace(/^[#\-\*\d+\.]\s*/, '');
+              const parts = clean.split(/[,，\t]/).map(s => s.trim()).filter(Boolean);
+              if (parts.length >= 2) {
+                rows.push([parts[0], parts[1], parts[2] || '']);
+              }
+            }
           }
         }
-        UI.toast(`导入了 ${lines.length} 个单词`, 'success');
+
+        if (rows.length === 0) {
+          UI.toast('未能从文件中解析到单词数据，请检查文件格式', 'warning');
+          return;
+        }
+
+        let imported = 0;
+        for (const [word, definition, example] of rows) {
+          await DB.put(store, {
+            source: 'manual', word, definition,
+            example: example || '', status: 'new', createdAt: Date.now()
+          });
+          imported++;
+        }
+        UI.toast(`成功导入 ${imported} 个单词`, 'success');
+        UI.closeModal();
+        this.render();
+        return;
       } else {
+        const text = await file.text();
         await DB.put(store, {
           source: 'manual', category: cat,
-          title: fileInput.files[0].name.replace(/\.[^.]+$/, ''),
+          title: file.name.replace(/\.[^.]+$/, ''),
           content: text.substring(0, 5000),
           createdAt: Date.now()
         });
