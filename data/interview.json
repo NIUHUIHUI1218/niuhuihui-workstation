@@ -1,29 +1,4 @@
 {
-  "questions": [
-    {
-      "source": "auto",
-      "category": "通用面试",
-      "question": "请做一个自我介绍。",
-      "answer": "建议结构：基本信息 + 核心优势 + 相关经验 + 应聘动机。控制在1-2分钟。",
-      "tags": ["通用面试", "初试"],
-      "createdAt": 0
-    },
-    {
-      "source": "auto",
-      "category": "职场通用",
-      "question": "你为什么离开上一家公司？",
-      "answer": "避免抱怨前公司，可从职业发展、学习机会等正面角度回答。",
-      "tags": ["职场通用", "跳槽"],
-      "createdAt": 0
-    },
-    {
-      "source": "auto",
-      "category": "行业专项",
-      "question": "你如何看待当前外贸行业的挑战与机遇？",
-      "answer": "可从数字化转型、新兴市场、供应链变化等角度回答，展示行业洞察。",
-      "tags": ["行业专项", "复试"],
-      "createdAt": 0
-    }
-  ],
-  "fetchedAt": "2026-07-30T00:00:00.000Z"
+  "questions": [],
+  "fetchedAt": "2026-07-30T16:18:41.352Z"
 }
