@@ -379,6 +379,7 @@ Modules.accounting = {
   async handleImportFile(file) {
     try {
       const ext = file.name.split('.').pop().toLowerCase();
+      console.log('[账单导入] 收到文件:', { name: file.name, type: file.type, size: file.size, ext });
       let result;
 
       if (ext === 'xlsx' || ext === 'xls') {
@@ -397,12 +398,34 @@ Modules.accounting = {
       }
 
       if (result.items.length === 0) {
-        console.warn('[账单导入] 未识别到数据:', {
-          source: result.source,
+        const debugInfo = {
           fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          source: result.source,
           debug: result.debug
-        });
-        UI.toast('未能从文件中识别到账单数据，请检查文件格式（已输出调试信息到控制台）', 'error');
+        };
+        console.warn('[账单导入] 未识别到数据:', debugInfo);
+
+        // 在预览区域显示诊断信息，方便用户截图
+        const preview = document.getElementById('importPreview');
+        if (preview) {
+          const previewHtml = JSON.stringify(debugInfo, null, 2)
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          preview.innerHTML = `
+            <div class="preview-error">
+              <h4>未能识别到账单数据</h4>
+              <p>请检查：</p>
+              <ul>
+                <li>是否选择了正确的账单来源平台</li>
+                <li>文件是否包含「交易时间/日期」和「金额」列</li>
+                <li>微信/支付宝账单导出时是否包含 CSV/Excel 明细</li>
+              </ul>
+              <p>诊断信息（请截图发给开发者）：</p>
+              <pre class="debug-pre">${previewHtml}</pre>
+            </div>`;
+        }
+        UI.toast('未能识别到账单数据，已显示诊断信息', 'error');
         return;
       }
 

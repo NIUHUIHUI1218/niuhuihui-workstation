@@ -155,15 +155,15 @@ const Utils = {
 
   // 标准字段 → 可能的表头别名（支持微信/支付宝/银行/自定义格式）
   BILL_FIELD_ALIASES: {
-    date: ['交易时间','交易日期','交易创建时间','付款时间','最近修改时间','date','时间','记账日期','日期','transaction date','transaction time','created time','支付时间','账单时间'],
-    type: ['收/支','收支','类型','type','收入/支出','收付','transaction type','income/expense','资金流向','资金状态','收付款状态'],
-    amount: ['金额','金额（元）','金额(元)','金额（人民币）','金额(人民币)','交易金额','amount','money','price','amount(元)','总额','实付金额'],
-    amountIn: ['收入金额','收入','贷方金额','贷方','入账金额','来账金额','income'],
-    amountOut: ['支出金额','支出','借方金额','借方','出账金额','去账金额','expense'],
-    title: ['商品说明','商品名称','商品','交易对方','对方','商户','摘要','交易摘要','对方户名','title','description','merchant','counterparty','交易备注','商品/服务','对方账号'],
-    channel: ['支付方式','支付渠道','channel','payment method','payment','支付工具','账户','收/付款方式'],
-    note: ['备注','交易类型','note','memo','附言','用途','说明'],
-    txId: ['交易订单号','交易单号','交易号','商户订单号','商户单号','transaction id','order id','流水号','交易流水号','订单号']
+    date: ['交易时间','交易日期','交易创建时间','付款时间','最近修改时间','date','时间','记账日期','日期','transaction date','transaction time','created time','支付时间','账单时间','消费日期','购货日期','订单日期','成交日期'],
+    type: ['收/支','收支','类型','type','收入/支出','收付','transaction type','income/expense','资金流向','资金状态','收付款状态','支出/收入','收入/支出','收支类型','类型type'],
+    amount: ['金额','金额（元）','金额(元)','金额（人民币）','金额(人民币)','交易金额','amount','money','price','amount(元)','总额','实付金额','金额元','价钱','费用','value','数值','合计','小计','金额（含优惠）','实付','支付金额','消费金额','订单金额'],
+    amountIn: ['收入金额','收入','贷方金额','贷方','入账金额','来账金额','income','收入额','收入（元）'],
+    amountOut: ['支出金额','支出','借方金额','借方','出账金额','去账金额','expense','支出额','支出（元）','消费'],
+    title: ['商品说明','商品名称','商品','交易对方','对方','商户','摘要','交易摘要','对方户名','title','description','merchant','counterparty','交易备注','商品/服务','对方账号','名称','项目','用途','消费项目','购买内容','商品描述','交易内容','事由'],
+    channel: ['支付方式','支付渠道','channel','payment method','payment','支付工具','账户','收/付款方式','支付途径','付款方式'],
+    note: ['备注','交易类型','note','memo','附言','用途','说明','备注信息','备注说明'],
+    txId: ['交易订单号','交易单号','交易号','商户订单号','商户单号','transaction id','order id','流水号','交易流水号','订单号','订单编号','编号']
   },
 
   // 标准化表头：去空格、去括号内文字、去货币符号、统一连接符、小写
@@ -197,12 +197,13 @@ const Utils = {
     return { map, normalizedHeaders };
   },
 
-  // 判断一行是否是账单表头
+  // 判断一行是否是账单表头（宽松匹配：有日期+金额相关列即可）
   isBillHeaderRow(row) {
     if (!row || row.length < 2) return false;
-    const line = row.map(c => String(c || '')).join(' ');
-    const hasDate = /(交易时间|交易日期|交易创建时间|付款时间|date|时间|记账日期|日期|transactiondate|transactiontime)/i.test(line);
-    const hasMoney = /(收\/支|收支|类型|type|金额|amount|收入金额|支出金额|借方|贷方|income|expense)/i.test(line);
+    const headers = row.map(c => String(c || '').trim());
+    const { map } = this.buildBillFieldMap(headers);
+    const hasDate = map.date !== undefined;
+    const hasMoney = map.amount !== undefined || map.amountIn !== undefined || map.amountOut !== undefined;
     return hasDate && hasMoney;
   },
 
@@ -272,6 +273,74 @@ const Utils = {
     return 'unknown';
   },
 
+  // 极简表格解析：支持 2-4 列的自定义记账表（日期/标题/金额[/类型]）
+  parseSimpleBillRows(rows) {
+    const results = [];
+    // 先找第一个非空行作为表头，或直接用第一行
+    let startIdx = 0;
+    for (let i = 0; i < Math.min(rows.length, 5); i++) {
+      if (rows[i] && rows[i].some(c => String(c || '').trim())) { startIdx = i; break; }
+    }
+    const headerRow = rows[startIdx];
+    const colCount = headerRow ? headerRow.length : 0;
+    if (colCount < 2 || colCount > 6) return { source: 'simple', items: [] };
+
+    // 推断列角色：先试第0列日期、最后一列金额
+    const dateIdx = 0;
+    const amountIdx = colCount - 1;
+    const titleIdx = colCount >= 3 ? 1 : -1;
+    const typeIdx = colCount >= 4 ? 2 : -1;
+
+    let parsedCount = 0;
+    for (let i = startIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length < Math.min(colCount, 2)) continue;
+      if (row.every(c => c === '' || c === null || c === undefined)) continue;
+
+      const date = this.parseBillDate(row[dateIdx]);
+      if (!date) continue;
+
+      const amountVal = row[amountIdx];
+      let amount = this.parseBillAmount(amountVal);
+      // 极简表格支持正负号：负数表示支出，正数表示收入
+      const rawStr = String(amountVal || '');
+      if (amount === 0) continue;
+      if (rawStr.startsWith('-') || rawStr.includes('(')) {
+        // 已经是按绝对值解析，这里不需要额外处理
+      }
+
+      let type = 'expense';
+      if (typeIdx >= 0) {
+        type = this.parseBillType(row[typeIdx], 0, 0);
+      } else {
+        type = rawStr.startsWith('-') || rawStr.includes('(') ? 'expense' : 'income';
+        // 如果没有类型列且金额为正，默认支出（除非明确是收入关键词）
+        if (type === 'income' && !/(收入|退款|收款|红包|转入|工资|奖金)/.test(rawStr)) {
+          type = 'expense';
+        }
+      }
+
+      const title = titleIdx >= 0 ? String(row[titleIdx] || '').trim() : (type === 'income' ? '收入' : '支出');
+      if (!title) continue;
+
+      results.push({
+        date, type, amount,
+        title,
+        category: this.autoCategory(title, type),
+        channel: '导入',
+        note: '',
+        source: 'simple',
+        platformTxId: ''
+      });
+      parsedCount++;
+    }
+
+    if (parsedCount > 0) {
+      console.log('[账单导入] 极简表格解析成功:', { count: parsedCount, colCount });
+    }
+    return { source: 'simple', items: results };
+  },
+
   // 从二维数组解析账单（统一入口）
   parseBillRows(rows, source = null) {
     console.log('[账单导入] 开始解析，总行数:', rows ? rows.length : 0);
@@ -285,8 +354,32 @@ const Utils = {
       if (this.isBillHeaderRow(rows[i])) { headerIdx = i; break; }
     }
     if (headerIdx === -1) {
-      console.warn('[账单导入] 未找到表头行，前3行:', rows.slice(0, 3).map(r => r.join(' | ')));
-      return { source: 'unknown', items: [], debug: { reason: '未找到表头行', preview: rows.slice(0, 5) } };
+      // 输出更易读的前5行日志
+      const preview = rows.slice(0, 5).map((r, idx) =>
+        `  行${idx}: [${r.map(c => JSON.stringify(String(c || ''))).join(', ')}]`
+      ).join('\n');
+      console.warn('[账单导入] 未找到表头行，前5行内容:\n' + preview);
+
+      // Fallback：尝试把第一个长度>=2的非空行当作表头
+      for (let i = 0; i < Math.min(rows.length, 30); i++) {
+        const row = rows[i];
+        if (row && row.length >= 2 && row.some(c => String(c || '').trim())) {
+          const headers = row.map(c => String(c || '').trim());
+          const { map } = this.buildBillFieldMap(headers);
+          if (map.date !== undefined && (map.amount !== undefined || map.amountIn !== undefined || map.amountOut !== undefined)) {
+            headerIdx = i;
+            console.log('[账单导入] Fallback 找到表头行:', i, headers);
+            break;
+          }
+        }
+      }
+
+      if (headerIdx === -1) {
+        // 最后尝试：极简表格（2-4列：日期/标题/金额[/类型]）
+        const simple = this.parseSimpleBillRows(rows);
+        if (simple.items.length > 0) return simple;
+        return { source: 'unknown', items: [], debug: { reason: '未找到表头行', preview: rows.slice(0, 5) } };
+      }
     }
 
     const headers = rows[headerIdx].map(h => String(h || '').trim());

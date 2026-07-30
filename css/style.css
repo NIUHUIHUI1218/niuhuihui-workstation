@@ -818,6 +818,30 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .import-progress .progress-bar-wrap { display: flex; align-items: center; gap: 10px; }
 .import-progress .progress-bar { flex: 1; }
 
+.preview-error {
+  background: #fff8f0;
+  border: 1px solid #ffd4a3;
+  border-radius: var(--radius-xs);
+  padding: 14px;
+  color: #8a4b00;
+}
+.preview-error h4 { margin: 0 0 10px 0; color: #d46b08; }
+.preview-error ul { margin: 8px 0; padding-left: 18px; }
+.preview-error li { margin: 4px 0; }
+.preview-error .debug-pre {
+  background: #fff;
+  border: 1px solid #ffe7ba;
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 220px;
+  overflow-y: auto;
+  color: #595959;
+}
+
 @media (max-width: 640px) {
   .preview-summary { grid-template-columns: repeat(2, 1fr); }
 }
