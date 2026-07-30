@@ -3,7 +3,9 @@
  */
 
 // 全局模块容器，必须在所有 module 脚本之前声明
-const Modules = {};
+// 使用 window 属性确保跨脚本绝对可访问
+window.Modules = window.Modules || {};
+const Modules = window.Modules;
 
 const Utils = {
   generateId(prefix = '') {

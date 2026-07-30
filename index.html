@@ -6,7 +6,7 @@
 <title>牛慧慧专属一体化工作台</title>
 <link rel="icon" type="image/png" href="favicon-cow.png">
 <link rel="apple-touch-icon" href="icon-cow.png">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=20260730-2">
 </head>
 <body>
 <!-- 顶部栏（手机端显示） -->
@@ -536,17 +536,35 @@
   </div>
 </div>
 
-<script src="js/db.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/sync.js"></script>
-<script src="js/modules/overview.js"></script>
-<script src="js/modules/fitness.js"></script>
-<script src="js/modules/accounting.js"></script>
-<script src="js/modules/english.js"></script>
-<script src="js/modules/reading.js"></script>
-<script src="js/modules/reflection.js"></script>
-<script src="js/modules/jobs.js"></script>
-<script src="js/modules/period.js"></script>
-<script src="js/app.js"></script>
+<script src="js/db.js?v=20260730-2"></script>
+<script src="js/utils.js?v=20260730-2"></script>
+<script src="js/sync.js?v=20260730-2"></script>
+<script src="js/modules/overview.js?v=20260730-2"></script>
+<script src="js/modules/fitness.js?v=20260730-2"></script>
+<script src="js/modules/accounting.js?v=20260730-2"></script>
+<script src="js/modules/english.js?v=20260730-2"></script>
+<script src="js/modules/reading.js?v=20260730-2"></script>
+<script src="js/modules/reflection.js?v=20260730-2"></script>
+<script src="js/modules/jobs.js?v=20260730-2"></script>
+<script src="js/modules/period.js?v=20260730-2"></script>
+<script src="js/app.js?v=20260730-2"></script>
+
+<!-- 诊断脚本：验证所有模块是否正确加载 -->
+<script>
+(function() {
+  if (window.Modules && window.UI) {
+    var names = Object.keys(window.Modules);
+    console.log('%c[牛慧慧工作台] %c✅ 加载成功！%c 模块数: ' + names.length,
+      'color:#8B7E6A', 'color:#5B9A68;font-weight:bold', 'color:#3D3929');
+    console.log('%c  Modules: %c' + names.join(', '),
+      'color:#8B7E6A', 'color:#7A7568');
+  } else {
+    console.error('%c[牛慧慧工作台] %c❌ 加载失败！',
+      'color:#8B7E6A', 'color:#D4786E;font-weight:bold');
+    console.log('  window.Modules:', typeof window.Modules, window.Modules);
+    console.log('  window.UI:', typeof window.UI, window.UI);
+  }
+})();
+</script>
 </body>
 </html>

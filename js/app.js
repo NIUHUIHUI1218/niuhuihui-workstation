@@ -2,7 +2,8 @@
  * 牛慧慧专属一体化工作台 - 主应用控制器
  */
 
-const UI = {
+window.UI = {
+  _ready: false,
   currentModule: 'overview',
 
   init() {
@@ -272,20 +273,54 @@ const UI = {
     await Sync.autoSync();
   }
 };
+const UI = window.UI;
+
+// 全局错误捕获
+window.addEventListener('error', (e) => {
+  if (e.target && e.target.tagName === 'SCRIPT') {
+    console.error('[WorkStation] Script load error:', e.target.src || 'inline script');
+  }
+  console.error('[WorkStation] Error:', e.message, e.filename, e.lineno);
+});
 
 // 应用初始化
 document.addEventListener('DOMContentLoaded', async () => {
-  await DB.init();
-  await Sync.loadConfig();
-  UI.init();
-  // 加载各模块初始数据
-  for (const name in Modules) {
-    if (Modules[name].init) await Modules[name].init();
+  console.log('[WorkStation] DOM ready, starting init...');
+  try {
+    await DB.init();
+    console.log('[WorkStation] DB initialized');
+    
+    await Sync.loadConfig();
+    console.log('[WorkStation] Sync config loaded');
+    
+    UI.init();
+    console.log('[WorkStation] UI bound, modules:', Object.keys(Modules).join(', '));
+    
+    // 加载各模块初始数据
+    for (const name in Modules) {
+      if (Modules[name].init) {
+        try {
+          await Modules[name].init();
+          console.log('[WorkStation] Module init:', name);
+        } catch (e) {
+          console.error('[WorkStation] Module init failed:', name, e);
+        }
+      }
+    }
+    
+    // 加载自动抓取数据（不阻塞渲染）
+    try { Modules.english.loadAutoData(); } catch(e) { console.error('[WorkStation] english auto data failed', e); }
+    try { Modules.jobs.loadAutoData(); } catch(e) { console.error('[WorkStation] jobs auto data failed', e); }
+    try { Modules.news.refreshNews(); } catch(e) { console.error('[WorkStation] news refresh failed', e); }
+    
+    // 渲染总览
+    await Modules.overview.render();
+    
+    UI._ready = true;
+    console.log('[WorkStation] ✅ System ready - all modules loaded');
+    UI.toast('系统就绪 ✓', 'success');
+  } catch (e) {
+    console.error('[WorkStation] 💥 Init failed:', e.message, e.stack);
+    alert('系统初始化失败: ' + e.message + '\n请刷新页面或清除缓存后重试');
   }
-  // 默认渲染总览
-  // 加载自动抓取数据
-  Modules.english.loadAutoData();
-  Modules.jobs.loadAutoData();
-  Modules.news.refreshNews();
-  Modules.overview.render();
 });
