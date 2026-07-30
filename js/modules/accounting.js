@@ -267,8 +267,8 @@ Modules.accounting = {
           '打开支付宝 App → 我的 → 账单',
           '点击右上角「...」→ 开具交易流水证明',
           '选择时间范围 → 申请 → 填写邮箱',
-          '在邮箱中下载解压后的 CSV 文件',
-          '将此 CSV 文件拖入下方区域'
+          '在邮箱中下载解压后的 CSV 或 Excel 文件',
+          '将此文件拖入下方区域'
         ],
         color: '#1677FF'
       },
@@ -279,7 +279,7 @@ Modules.accounting = {
           '点击右上角「常见问题」→ 下载账单',
           '选择「用作证明材料」→ 选择时间范围',
           '填写邮箱 → 确认 → 输入支付密码验证',
-          '在邮箱中下载解压后的 CSV 文件，拖入下方'
+          '在邮箱中下载解压后的 CSV 或 Excel 文件，拖入下方'
         ],
         color: '#07C160'
       },
@@ -288,7 +288,7 @@ Modules.accounting = {
         steps: [
           '登录银行 App → 交易明细/账单',
           '选择时间范围 → 导出/下载明细',
-          '将下载的 CSV 文件拖入下方区域'
+          '将下载的 CSV 或 Excel 文件拖入下方区域'
         ],
         color: '#D4380D'
       }
@@ -320,9 +320,9 @@ Modules.accounting = {
           <div class="import-dropzone" id="importDropzone" style="display:none">
             <div class="dropzone-inner">
               <span class="dropzone-icon">📂</span>
-              <p>将 CSV 文件拖入此处，或点击选择</p>
+              <p>将 CSV / Excel 文件拖入此处，或点击选择</p>
               <p class="dropzone-hint" id="dropzoneHint">当前平台：--</p>
-              <input type="file" id="importFileInput" accept=".csv" style="display:none">
+              <input type="file" id="importFileInput" accept=".csv,.xls,.xlsx" style="display:none">
               <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFileInput').click()">选择文件</button>
             </div>
           </div>
@@ -378,8 +378,23 @@ Modules.accounting = {
 
   async handleImportFile(file) {
     try {
-      const text = await file.text();
-      const result = Utils.parseBillCSV(text, this._previewSource);
+      const ext = file.name.split('.').pop().toLowerCase();
+      let result;
+
+      if (ext === 'xlsx' || ext === 'xls') {
+        // Excel 文件解析
+        const buffer = await file.arrayBuffer();
+        const rows = Utils.parseExcelToRows(buffer);
+        if (!rows || rows.length < 2) {
+          UI.toast('未能从 Excel 文件中读取到数据，请检查文件内容', 'error');
+          return;
+        }
+        result = Utils.parseBillRows(rows, this._previewSource || 'auto');
+      } else {
+        // CSV 文件解析
+        const text = await file.text();
+        result = Utils.parseBillCSV(text, this._previewSource);
+      }
 
       if (result.items.length === 0) {
         UI.toast('未能从文件中识别到账单数据，请检查文件格式', 'error');
