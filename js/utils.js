@@ -357,7 +357,21 @@ const Utils = {
   // 从二维数组（Excel 行）中解析账单
   parseBillRows(rows, source = null) {
     if (!rows || rows.length < 2) return { source: 'unknown', items: [] };
-    const headers = rows[0].map(h => String(h || '').trim());
+
+    // 先定位真正的表头行（兼容微信/支付宝等多行说明文字）
+    let headerIdx = 0;
+    for (let i = 0; i < Math.min(rows.length, 15); i++) {
+      const line = rows[i].map(c => String(c || '')).join(' ');
+      if (/交易时间|交易日期|date/i.test(line) && (/收\/支|收支|type/i.test(line))) {
+        headerIdx = i; break;
+      }
+    }
+
+    // 从表头行开始截取有效数据
+    const dataRows = rows.slice(headerIdx);
+    if (dataRows.length < 2) return { source: 'unknown', items: [] };
+
+    const headers = dataRows[0].map(h => String(h || '').trim());
     const hstr = headers.join(' ');
     const hlower = headers.map(h => h.toLowerCase().replace(/[（(]\S+[)）]/g, '').trim());
 
@@ -371,9 +385,9 @@ const Utils = {
     }
 
     if (!detectedSource) {
-      // 自动尝试各种格式
+      // 自动尝试各种格式（把有效数据重新拼成CSV走老逻辑）
       const csvText = [headers.join(',')].concat(
-        rows.slice(1).map(r => r.map(c => '"' + String(c || '').replace(/"/g, '""') + '"').join(','))
+        dataRows.slice(1).map(r => r.map(c => '"' + String(c || '').replace(/"/g, '""') + '"').join(','))
       ).join('\n');
       for (const fmt of ['alipay', 'wechat', 'bank']) {
         const items = this['parse' + fmt.charAt(0).toUpperCase() + fmt.slice(1) + 'CSV'](csvText);
@@ -382,8 +396,10 @@ const Utils = {
       return { source: 'unknown', items: [] };
     }
 
-    // 根据来源调用对应解析逻辑
-    return this._parseRowsBySource(rows, headers, hlower, detectedSource);
+    // 根据来源调用对应解析逻辑（传的是已截取的 dataRows）
+    const result = this._parseRowsBySource(dataRows, headers, hlower, detectedSource);
+    console.log('[账单导入] 解析结果:', { source: detectedSource, totalRows: dataRows.length - 1, parsed: result.items.length, headers: headers.slice(0, 8) });
+    return result;
   },
 
   // 按来源解析行数据

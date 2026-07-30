@@ -397,6 +397,7 @@ Modules.accounting = {
       }
 
       if (result.items.length === 0) {
+        console.warn('[账单导入] 未识别到数据:', { source: result.source, fileName: file.name });
         UI.toast('未能从文件中识别到账单数据，请检查文件格式', 'error');
         return;
       }
