@@ -412,14 +412,19 @@ Modules.accounting = {
         if (preview) {
           const previewHtml = JSON.stringify(debugInfo, null, 2)
             .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const garbledHint = result.debug && result.debug.hasGarbled
+            ? '<p><strong>检测到文件存在乱码。</strong>建议用 Excel 打开该文件，然后「另存为」CSV (UTF-8) 或新的 xlsx 后再导入。</p>'
+            : '';
           preview.innerHTML = `
             <div class="preview-error">
               <h4>未能识别到账单数据</h4>
+              ${garbledHint}
               <p>请检查：</p>
               <ul>
                 <li>是否选择了正确的账单来源平台</li>
                 <li>文件是否包含「交易时间/日期」和「金额」列</li>
                 <li>微信/支付宝账单导出时是否包含 CSV/Excel 明细</li>
+                <li>如果文件打开后中文显示乱码，请另存为 CSV 再导入</li>
               </ul>
               <p>诊断信息（请截图发给开发者）：</p>
               <pre class="debug-pre">${previewHtml}</pre>

@@ -341,6 +341,105 @@ const Utils = {
     return { source: 'simple', items: results };
   },
 
+  // 检测字符串是否包含乱码（替换字符或连续问号）
+  hasGarbledText(str) {
+    if (!str) return false;
+    const s = String(str);
+    if (/\uFFFD/.test(s)) return true; // Unicode 替换字符
+    if (/\?{3,}/.test(s)) return true; // 连续3个以上问号
+    return false;
+  },
+
+  // 基于内容模式解析（不依赖表头文字，适用于乱码/特殊编码文件）
+  parsePatternBasedRows(rows) {
+    const results = [];
+    if (!rows || rows.length < 2) return { source: 'pattern', items: [] };
+
+    // 扫描所有行，统计哪些列最常见日期格式和金额格式
+    const dateColCounts = {};
+    const amountColCounts = {};
+    const sampleRows = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length < 2) continue;
+      let rowHasDate = false;
+      let rowHasAmount = false;
+      let dateCol = -1;
+      let amountCol = -1;
+
+      for (let c = 0; c < row.length; c++) {
+        const val = String(row[c] || '').trim();
+        if (!val) continue;
+        if (this.parseBillDate(val)) {
+          rowHasDate = true; dateCol = c;
+          dateColCounts[c] = (dateColCounts[c] || 0) + 1;
+        }
+        if (this.parseBillAmount(val) > 0 && !this.parseBillDate(val)) {
+          // 避免同一单元格既是日期又是金额被重复计数
+          rowHasAmount = true; amountCol = c;
+          amountColCounts[c] = (amountColCounts[c] || 0) + 1;
+        }
+      }
+
+      if (rowHasDate && rowHasAmount && dateCol !== amountCol) {
+        sampleRows.push({ idx: i, dateCol, amountCol, row });
+      }
+    }
+
+    if (sampleRows.length < 1) return { source: 'pattern', items: [] };
+
+    // 找出最常见的日期列和金额列
+    const dateIdx = Object.entries(dateColCounts).sort((a, b) => b[1] - a[1])[0][0];
+    const amountIdx = Object.entries(amountColCounts).sort((a, b) => b[1] - a[1])[0][0];
+    const dateColNum = parseInt(dateIdx, 10);
+    const amountColNum = parseInt(amountIdx, 10);
+
+    // 标题列：找同时包含日期和金额的数据行中，除日期/金额列外最长的文本列
+    const textColScores = {};
+    for (const s of sampleRows.slice(0, 30)) {
+      for (let c = 0; c < s.row.length; c++) {
+        if (c === dateColNum || c === amountColNum) continue;
+        const val = String(s.row[c] || '').trim();
+        if (val.length > 2 && !this.parseBillDate(val) && this.parseBillAmount(val) === 0) {
+          textColScores[c] = (textColScores[c] || 0) + val.length;
+        }
+      }
+    }
+    const titleColNum = Object.entries(textColScores).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+    console.log('[账单导入] 模式解析推断列:', { dateColNum, amountColNum, titleColNum, sampleCount: sampleRows.length });
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length <= Math.max(dateColNum, amountColNum)) continue;
+      const dateVal = row[dateColNum];
+      const amountVal = row[amountColNum];
+      const date = this.parseBillDate(dateVal);
+      const amount = this.parseBillAmount(amountVal);
+      if (!date || amount === 0) continue;
+
+      // 跳过表头行本身（表头通常解析不出日期）
+      if (this.parseBillDate(dateVal) && this.parseBillAmount(amountVal) > 0) {
+        const rawStr = String(amountVal || '');
+        let type = rawStr.startsWith('-') || rawStr.includes('(') ? 'expense' : 'income';
+        if (type === 'income' && !/(收入|退款|收款|红包|转入|工资|奖金)/.test(rawStr)) type = 'expense';
+
+        const title = titleColNum !== undefined ? String(row[titleColNum] || '').trim() : (type === 'income' ? '收入' : '支出');
+        if (!title) continue;
+
+        results.push({
+          date, type, amount, title,
+          category: this.autoCategory(title, type),
+          channel: '导入', note: '',
+          source: 'pattern', platformTxId: ''
+        });
+      }
+    }
+
+    return { source: 'pattern', items: results };
+  },
+
   // 从二维数组解析账单（统一入口）
   parseBillRows(rows, source = null) {
     console.log('[账单导入] 开始解析，总行数:', rows ? rows.length : 0);
@@ -348,20 +447,34 @@ const Utils = {
       return { source: 'unknown', items: [], debug: { reason: '数据行数不足', rows: rows ? rows.length : 0 } };
     }
 
+    // 检测乱码
+    let garbledCount = 0;
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const row = rows[i];
+      if (!row) continue;
+      for (const c of row) {
+        if (this.hasGarbledText(c)) { garbledCount++; break; }
+      }
+    }
+    const hasGarbled = garbledCount >= 2;
+    if (hasGarbled) {
+      console.warn('[账单导入] 检测到文件存在乱码，将尝试基于内容模式解析');
+    }
+
     // 1. 定位真正的表头行（兼容微信/支付宝/银行前导说明）
     let headerIdx = -1;
-    for (let i = 0; i < Math.min(rows.length, 25); i++) {
+    for (let i = 0; i < Math.min(rows.length, 50); i++) {
       if (this.isBillHeaderRow(rows[i])) { headerIdx = i; break; }
     }
     if (headerIdx === -1) {
-      // 输出更易读的前5行日志
-      const preview = rows.slice(0, 5).map((r, idx) =>
+      // 输出更易读的前10行日志
+      const preview = rows.slice(0, 10).map((r, idx) =>
         `  行${idx}: [${r.map(c => JSON.stringify(String(c || ''))).join(', ')}]`
       ).join('\n');
-      console.warn('[账单导入] 未找到表头行，前5行内容:\n' + preview);
+      console.warn('[账单导入] 未找到表头行，前10行内容:\n' + preview);
 
       // Fallback：尝试把第一个长度>=2的非空行当作表头
-      for (let i = 0; i < Math.min(rows.length, 30); i++) {
+      for (let i = 0; i < Math.min(rows.length, 50); i++) {
         const row = rows[i];
         if (row && row.length >= 2 && row.some(c => String(c || '').trim())) {
           const headers = row.map(c => String(c || '').trim());
@@ -375,10 +488,15 @@ const Utils = {
       }
 
       if (headerIdx === -1) {
-        // 最后尝试：极简表格（2-4列：日期/标题/金额[/类型]）
+        // 尝试：极简表格（2-6列：日期/标题/金额[/类型]）
         const simple = this.parseSimpleBillRows(rows);
         if (simple.items.length > 0) return simple;
-        return { source: 'unknown', items: [], debug: { reason: '未找到表头行', preview: rows.slice(0, 5) } };
+
+        // 最后尝试：基于日期+金额模式的列推断（乱码文件救命方案）
+        const pattern = this.parsePatternBasedRows(rows);
+        if (pattern.items.length > 0) return pattern;
+
+        return { source: 'unknown', items: [], debug: { reason: '未找到表头行', hasGarbled, preview: rows.slice(0, 10) } };
       }
     }
 
