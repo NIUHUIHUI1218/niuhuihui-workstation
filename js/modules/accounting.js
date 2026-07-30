@@ -315,7 +315,7 @@ Modules.accounting = {
       '📥 导入平台账单',
       `
         <div class="import-container">
-          <p class="import-intro">选择账单来源平台，上传导出的 CSV 文件即可自动识别并导入。</p>
+          <p class="import-intro">选择账单来源平台，上传导出的 CSV 或 Excel(.xls/.xlsx) 文件即可自动识别并导入。</p>
           <div class="import-guides">${guideHTML}</div>
           <div class="import-dropzone" id="importDropzone" style="display:none">
             <div class="dropzone-inner">
@@ -397,8 +397,12 @@ Modules.accounting = {
       }
 
       if (result.items.length === 0) {
-        console.warn('[账单导入] 未识别到数据:', { source: result.source, fileName: file.name });
-        UI.toast('未能从文件中识别到账单数据，请检查文件格式', 'error');
+        console.warn('[账单导入] 未识别到数据:', {
+          source: result.source,
+          fileName: file.name,
+          debug: result.debug
+        });
+        UI.toast('未能从文件中识别到账单数据，请检查文件格式（已输出调试信息到控制台）', 'error');
         return;
       }
 
