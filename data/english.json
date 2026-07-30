@@ -1,0 +1,32 @@
+{
+  "speaking": [
+    {
+      "source": "auto",
+      "category": "business",
+      "title": "帮客户订酒店",
+      "content": "You: Good morning, Mr. Smith! Have you settled in well? How's the hotel?\nClient: Good morning! Yes, the room is lovely. Thank you for arranging it.\nYou: I'm glad you like it. I chose a room with a city view — the night scenery here is quite beautiful.\nClient: Oh, I noticed! The skyline at night is stunning. Great choice!\nYou: If you need anything — laundry, gym access, or restaurant recommendations — just let me know.",
+      "dialogue": [
+        { "role": "you", "text": "Good morning, Mr. Smith! Have you settled in well? How's the hotel?" },
+        { "role": "client", "text": "Good morning! Yes, the room is lovely. Thank you for arranging it." },
+        { "role": "you", "text": "I'm glad you like it. I chose a room with a city view — the night scenery here is quite beautiful." },
+        { "role": "client", "text": "Oh, I noticed! The skyline at night is stunning. Great choice!" },
+        { "role": "you", "text": "If you need anything — laundry, gym access, or restaurant recommendations — just let me know." }
+      ],
+      "phrases": "settle in 安顿下来；city view 城市景观；I'm happy to help 我很乐意帮忙",
+      "culturalTips": "中东客户篇：尊重宗教习惯，注意祈祷时间；握手礼仪：中东男性通常不和女性握手，可用点头微笑代替。",
+      "externalLink": "https://www.bbc.co.uk/learningenglish/",
+      "createdAt": 0
+    }
+  ],
+  "listening": [
+    {
+      "source": "auto",
+      "title": "VOA 慢速英语：今日关键词",
+      "content": "请听音频，理解今日关键词的用法。",
+      "audioUrl": "",
+      "exercises": "请听音频并尝试理解以下关键词：opportunity, challenge, strategy, growth, communication",
+      "createdAt": 0
+    }
+  ],
+  "fetchedAt": "2026-07-30T00:00:00.000Z"
+}

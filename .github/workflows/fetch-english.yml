@@ -1,0 +1,33 @@
+name: Fetch English Materials
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 北京时间每天中午 11 点（UTC 3 点）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Fetch english materials
+        run: node scripts/fetch-english.js
+        env:
+          BBC_RSS: ${{ secrets.BBC_RSS }}
+          VOA_RSS: ${{ secrets.VOA_RSS }}
+          BUSINESS_EN_RSS: ${{ secrets.BUSINESS_EN_RSS }}
+          BBC_LISTEN_RSS: ${{ secrets.BBC_LISTEN_RSS }}
+      - name: Commit data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/english.json
+          git diff --cached --quiet || git commit -m "auto: update english $(date -u +%Y-%m-%d)"
+          git pull --rebase
+          git push

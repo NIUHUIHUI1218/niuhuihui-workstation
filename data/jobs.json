@@ -1,0 +1,23 @@
+{
+  "jobs": [
+    {
+      "title": "外贸业务员",
+      "company": "示例科技有限公司",
+      "salary": 12000,
+      "requirements": "负责开拓海外市场，维护客户关系，英语流利，有1年以上外贸经验。",
+      "skills": ["英语", "外贸", "Excel", "PPT"],
+      "link": "https://www.example.com/job/1",
+      "createdAt": 0
+    },
+    {
+      "title": "跨境电商运营",
+      "company": "示例电商公司",
+      "salary": 15000,
+      "requirements": "负责Amazon/独立站运营，数据分析能力强，熟悉广告投放。",
+      "skills": ["数据分析", "英语", "运营", "AI"],
+      "link": "https://www.example.com/job/2",
+      "createdAt": 0
+    }
+  ],
+  "fetchedAt": "2026-07-30T00:00:00.000Z"
+}

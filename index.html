@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>牛慧慧专属一体化工作台</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- 顶部栏（手机端显示） -->
+<header class="mobile-header">
+  <button class="menu-toggle" id="menuToggle" aria-label="菜单">☰</button>
+  <h1>牛慧慧工作台</h1>
+  <button class="sync-indicator" id="syncBtn" title="同步状态">🔄</button>
+</header>
+
+<!-- 遮罩层（手机端用） -->
+<div class="nav-overlay" id="navOverlay"></div>
+
+<!-- 左侧导航栏 -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-icon">🐮</div>
+      <div class="logo-text">
+        <h2>牛慧慧</h2>
+        <p>专属工作台</p>
+      </div>
+    </div>
+  </div>
+  <ul class="nav-list" id="navList">
+    <li class="nav-item active" data-module="overview">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">今日总览</span>
+      <span class="nav-badge" id="badge-overview">0</span>
+    </li>
+    <li class="nav-item" data-module="plans">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">每日计划</span>
+      <span class="nav-badge" id="badge-plans">0</span>
+    </li>
+    <li class="nav-item" data-module="fitness">
+      <span class="nav-icon">🏃</span>
+      <span class="nav-label">运动健身</span>
+    </li>
+    <li class="nav-item" data-module="accounting">
+      <span class="nav-icon">💰</span>
+      <span class="nav-label">记账本</span>
+    </li>
+    <li class="nav-item" data-module="english">
+      <span class="nav-icon">📖</span>
+      <span class="nav-label">英语学习</span>
+      <span class="nav-badge" id="badge-english">0</span>
+    </li>
+    <li class="nav-item" data-module="reading">
+      <span class="nav-icon">📚</span>
+      <span class="nav-label">读书笔记</span>
+    </li>
+    <li class="nav-item" data-module="reflection">
+      <span class="nav-icon">💭</span>
+      <span class="nav-label">每日感悟</span>
+    </li>
+    <li class="nav-item" data-module="review">
+      <span class="nav-icon">🔄</span>
+      <span class="nav-label">内容复盘</span>
+    </li>
+    <li class="nav-item" data-module="jobs">
+      <span class="nav-icon">💼</span>
+      <span class="nav-label">找工作</span>
+      <span class="nav-badge" id="badge-jobs">0</span>
+    </li>
+    <li class="nav-item" data-module="period">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">经期记录</span>
+      <span class="nav-badge" id="badge-period"></span>
+    </li>
+    <li class="nav-item" data-module="news">
+      <span class="nav-icon">📰</span>
+      <span class="nav-label">资讯推送</span>
+      <span class="nav-badge" id="badge-news">0</span>
+    </li>
+  </ul>
+  <div class="sidebar-footer">
+    <button class="btn-settings" id="btnSettings" title="设置">⚙️ 设置</button>
+    <div class="sync-status" id="syncStatus">离线模式</div>
+  </div>
+</nav>
+
+<!-- 右侧主内容区 -->
+<main class="main-content" id="mainContent">
+
+  <!-- ==================== 今日总览 ==================== -->
+  <section class="module-page active" id="page-overview">
+    <div class="page-header">
+      <h2>📊 今日总览</h2>
+      <p class="page-date" id="overviewDate"></p>
+    </div>
+    <div class="overview-grid" id="overviewCards"></div>
+    <div class="overview-section">
+      <h3>⚠️ 待处理事项</h3>
+      <div class="pending-list" id="pendingList">
+        <p class="empty-hint">暂无待处理事项 🎉</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 每日计划 ==================== -->
+  <section class="module-page" id="page-plans">
+    <div class="page-header">
+      <h2>📋 每日计划</h2>
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="Modules.plans.showAddDialog()">+ 新增任务</button>
+        <button class="btn btn-outline" onclick="Modules.plans.archiveCompleted()">📦 归档已完成</button>
+      </div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="plansProgressBar">
+        <div class="progress-fill" id="plansProgressFill"></div>
+      </div>
+      <span class="progress-text" id="plansProgressText">0/0</span>
+    </div>
+    <div class="plans-dual">
+      <div class="plan-column" id="plan-work">
+        <h3 class="column-title">💼 工作计划</h3>
+        <div class="task-list" id="taskList-work"></div>
+        <button class="btn btn-add" onclick="Modules.plans.showAddDialog('work')">+ 添加工作计划</button>
+      </div>
+      <div class="plan-column" id="plan-life">
+        <h3 class="column-title">🏠 生活计划</h3>
+        <div class="task-list" id="taskList-life"></div>
+        <button class="btn btn-add" onclick="Modules.plans.showAddDialog('life')">+ 添加生活计划</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 运动健身 ==================== -->
+  <section class="module-page" id="page-fitness">
+    <div class="page-header">
+      <h2>🏃 运动健身</h2>
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="Modules.fitness.showAddDialog()">+ 新增运动</button>
+        <button class="btn btn-outline" onclick="Modules.fitness.archiveCompleted()">📦 归档已完成</button>
+      </div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="fitnessProgressBar">
+        <div class="progress-fill" id="fitnessProgressFill"></div>
+      </div>
+      <span class="progress-text" id="fitnessProgressText">0/0</span>
+    </div>
+    <div class="plans-dual">
+      <div class="plan-column fitness-plan">
+        <h3 class="column-title">🎯 运动计划</h3>
+        <div class="task-list" id="fitnessList"></div>
+        <button class="btn btn-add" onclick="Modules.fitness.showAddDialog()">+ 添加运动项目</button>
+      </div>
+      <div class="plan-column fitness-body">
+        <h3 class="column-title">📏 身体数据</h3>
+        <div class="fitness-stats-grid" id="fitnessStatsGrid">
+          <div class="fitness-stat-card">
+            <div class="stat-label">今日体重</div>
+            <div class="stat-value" id="stat-weight">-- kg</div>
+          </div>
+          <div class="fitness-stat-card">
+            <div class="stat-label">本月运动天数</div>
+            <div class="stat-value" id="stat-exerciseDays">0天</div>
+          </div>
+          <div class="fitness-stat-card">
+            <div class="stat-label">今日消耗</div>
+            <div class="stat-value" id="stat-calories">0 kcal</div>
+          </div>
+          <div class="fitness-stat-card">
+            <div class="stat-label">运动总时长</div>
+            <div class="stat-value" id="stat-duration">0分钟</div>
+          </div>
+        </div>
+        <div class="body-record-section">
+          <h4>📝 身体数据记录</h4>
+          <div class="body-records" id="bodyRecords">
+            <p class="empty-hint">暂无记录，开始记录吧</p>
+          </div>
+          <button class="btn btn-add" onclick="Modules.fitness.showBodyRecordDialog()">+ 记录身体数据</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 记账本 ==================== -->
+  <section class="module-page" id="page-accounting">
+    <div class="page-header">
+      <h2>💰 记账本</h2>
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="Modules.accounting.showAddDialog()">+ 记一笔</button>
+        <button class="btn btn-outline" onclick="Modules.accounting.setBudget()">📊 设置预算</button>
+      </div>
+    </div>
+    <!-- 存钱计划 -->
+    <div class="budget-cards" id="budgetCards">
+      <div class="budget-card">
+        <div class="bc-label">今日预算</div>
+        <div class="bc-value" id="bc-dailyBudget">¥0</div>
+      </div>
+      <div class="budget-card">
+        <div class="bc-label">今日已支出</div>
+        <div class="bc-value danger" id="bc-todaySpent">¥0</div>
+      </div>
+      <div class="budget-card">
+        <div class="bc-label">今日结余</div>
+        <div class="bc-value success" id="bc-todayBalance">¥0</div>
+      </div>
+      <div class="budget-card">
+        <div class="bc-label">本月累计储蓄</div>
+        <div class="bc-value primary" id="bc-monthlySavings">¥0</div>
+      </div>
+    </div>
+    <div class="budget-progress">
+      <div class="budget-bar" id="budgetBar"><div class="budget-fill"></div></div>
+      <span class="budget-text" id="budgetText">0%</span>
+    </div>
+    <!-- 月度统计 -->
+    <div class="monthly-stats" id="monthlyStats">
+      <div class="stat-card income">
+        <div class="stat-label">本月总收入</div>
+        <div class="stat-value" id="stat-income">¥0</div>
+      </div>
+      <div class="stat-card expense">
+        <div class="stat-label">本月总支出</div>
+        <div class="stat-value" id="stat-expense">¥0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">月度结余</div>
+        <div class="stat-value" id="stat-balance">¥0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">储蓄率</div>
+        <div class="stat-value" id="stat-savingRate">0%</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <h4>近7天支出趋势</h4>
+      <canvas id="expenseChart" width="600" height="200"></canvas>
+    </div>
+    <div class="transaction-filters">
+      <button class="filter-btn active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="income">收入</button>
+      <button class="filter-btn" data-filter="expense">支出</button>
+      <input type="text" class="search-input" id="txSearch" placeholder="搜索账单...">
+    </div>
+    <div class="transaction-list" id="transactionList">
+      <p class="empty-hint">暂无账单记录</p>
+    </div>
+  </section>
+
+  <!-- ==================== 英语学习 ==================== -->
+  <section class="module-page" id="page-english">
+    <div class="page-header">
+      <h2>📖 英语学习</h2>
+    </div>
+    <div class="english-tabs">
+      <button class="etab active" data-sub="speaking">🗣️ 每日口语</button>
+      <button class="etab" data-sub="listening">👂 每日听力</button>
+    </div>
+    <div class="english-sub" id="english-speaking">
+      <div class="sub-header">
+        <h3>每日口语练习</h3>
+        <button class="btn btn-primary" onclick="Modules.english.showAddDialog('speaking')">+ 新增素材</button>
+      </div>
+      <div class="source-tabs">
+        <button class="stab active" data-source="auto">系统抓取</button>
+        <button class="stab" data-source="manual">手动录入</button>
+      </div>
+      <div class="english-filter-bar">
+        <button class="efilter-btn active" data-filter="all">全部</button>
+        <button class="efilter-btn" data-filter="business">商务英语</button>
+        <button class="efilter-btn" data-filter="daily">日常英语</button>
+      </div>
+      <div class="english-list" id="englishList-speaking"></div>
+    </div>
+    <div class="english-sub" id="english-listening" style="display:none">
+      <div class="sub-header">
+        <h3>每日听力练习</h3>
+        <button class="btn btn-primary" onclick="Modules.english.showAddDialog('listening')">+ 新增素材</button>
+      </div>
+      <div class="source-tabs">
+        <button class="stab active" data-source="auto">系统抓取</button>
+        <button class="stab" data-source="manual">手动录入</button>
+      </div>
+      <div class="english-filter-bar">
+        <button class="efilter-btn active" data-filter="all">全部</button>
+        <button class="efilter-btn" data-filter="unpracticed">未练习</button>
+        <button class="efilter-btn" data-filter="done">已完成</button>
+        <button class="efilter-btn" data-filter="review">待复习</button>
+      </div>
+      <div class="english-list" id="englishList-listening"></div>
+    </div>
+  </section>
+
+  <!-- ==================== 读书笔记 ==================== -->
+  <section class="module-page reading-page" id="page-reading">
+    <div class="page-header">
+      <h2>📚 读书笔记</h2>
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="Modules.reading.showAddDialog()">+ 新增笔记</button>
+        <button class="btn btn-outline" onclick="Modules.reading.showNewBook()">📖 新建书单</button>
+      </div>
+    </div>
+    <div class="reading-search-bar">
+      <input type="text" id="readingSearch" placeholder="🔍 搜索全部笔记..." oninput="Modules.reading.search()">
+      <select id="readingTagFilter" onchange="Modules.reading.render()">
+        <option value="all">全部分类</option>
+        <option value="摘抄金句">摘抄金句</option>
+        <option value="读后感悟">读后感悟</option>
+        <option value="章节备注">章节备注</option>
+      </select>
+      <select id="readingBookFilter" onchange="Modules.reading.render()">
+        <option value="all">全部书籍</option>
+      </select>
+    </div>
+    <div class="reading-grid" id="readingGrid">
+      <p class="empty-hint">📚 暂无读书笔记，开始记录吧</p>
+    </div>
+  </section>
+
+  <!-- ==================== 每日感悟 ==================== -->
+  <section class="module-page" id="page-reflection">
+    <div class="page-header">
+      <h2>💭 每日感悟</h2>
+      <button class="btn btn-primary" onclick="Modules.reflection.showAddDialog()">+ 记录感悟</button>
+    </div>
+    <div class="reflection-search">
+      <input type="text" id="reflectionSearch" placeholder="🔍 搜索历史感悟..." oninput="Modules.reflection.render()">
+    </div>
+    <div class="reflection-list" id="reflectionList">
+      <p class="empty-hint">暂无记录</p>
+    </div>
+  </section>
+
+  <!-- ==================== 内容复盘 ==================== -->
+  <section class="module-page" id="page-review">
+    <div class="page-header">
+      <h2>🔄 内容复盘</h2>
+    </div>
+    <div class="review-grid">
+      <div class="review-panel">
+        <h3>💼 工作内容复盘</h3>
+        <textarea id="review-work" class="review-input" placeholder="记录今日工作问题、待优化事项..."></textarea>
+      </div>
+      <div class="review-panel">
+        <h3>📖 英语学习复盘</h3>
+        <textarea id="review-english" class="review-input" placeholder="记录英语学习中的困难、进步..."></textarea>
+      </div>
+      <div class="review-panel">
+        <h3>🏠 日常生活复盘</h3>
+        <textarea id="review-life" class="review-input" placeholder="记录生活中的感悟、改进方向..."></textarea>
+      </div>
+    </div>
+    <div class="review-actions">
+      <input type="text" id="reviewDate" class="review-date-input" placeholder="日期（默认今日）">
+      <button class="btn btn-primary" onclick="Modules.review.save()">💾 保存复盘</button>
+      <button class="btn btn-outline" onclick="Modules.review.loadHistory()">📅 查看历史</button>
+    </div>
+    <div class="review-history" id="reviewHistory"></div>
+  </section>
+
+  <!-- ==================== 找工作 ==================== -->
+  <section class="module-page" id="page-jobs">
+    <div class="page-header">
+      <h2>💼 找工作</h2>
+    </div>
+    <div class="jobs-tabs">
+      <button class="jtab active" data-sub="search">🔍 求职筛选</button>
+      <button class="jtab" data-sub="interview">🎤 面试准备</button>
+    </div>
+    <!-- 求职筛选 -->
+    <div class="jobs-sub" id="jobs-search">
+      <div class="profile-section">
+        <h3>个人技能档案</h3>
+        <div class="profile-form">
+          <div class="pf-row">
+            <label>现有技能</label>
+            <input type="text" id="currentSkills" placeholder="输入已有技能，用逗号分隔">
+          </div>
+          <div class="pf-row">
+            <label>计划学习</label>
+            <input type="text" id="plannedSkills" placeholder="输入计划学习技能，用逗号分隔">
+          </div>
+          <div class="pf-row">
+            <label>当前薪资 (¥)</label>
+            <input type="number" id="currentSalary" placeholder="输入当前月薪">
+          </div>
+          <button class="btn btn-primary" onclick="Modules.jobs.saveProfile()">💾 保存档案</button>
+        </div>
+      </div>
+      <div class="skill-gap-section">
+        <h3>技能缺口分析</h3>
+        <div id="skillGapContent"><p class="empty-hint">请先完善个人技能档案</p></div>
+      </div>
+      <div class="jobs-list-section">
+        <h3>推荐岗位 <button class="btn btn-sm" onclick="Modules.jobs.refreshJobs()">🔄 刷新</button></h3>
+        <div id="jobsList"><p class="empty-hint">暂无推荐</p></div>
+      </div>
+      <div class="growth-log-section">
+        <h3>📈 成长备忘录</h3>
+        <button class="btn btn-add" onclick="Modules.jobs.showGrowthDialog()">+ 记录学习进度</button>
+        <div id="growthLog"><p class="empty-hint">开始记录你的学习成长之路</p></div>
+      </div>
+    </div>
+    <!-- 面试准备 -->
+    <div class="jobs-sub" id="jobs-interview" style="display:none">
+      <div class="sub-header">
+        <h3>🎤 面试准备</h3>
+        <button class="btn btn-primary" onclick="Modules.jobs.showInterviewAddDialog()">+ 新增素材</button>
+      </div>
+      <div class="source-tabs">
+        <button class="stab active" data-source="auto">系统抓取</button>
+        <button class="stab" data-source="manual">手动录入</button>
+      </div>
+      <div class="interview-filter-bar">
+        <button class="ifilter-btn active" data-filter="all">全部</button>
+        <button class="ifilter-btn" data-filter="通用面试">通用面试</button>
+        <button class="ifilter-btn" data-filter="职场通用">职场通用</button>
+        <button class="ifilter-btn" data-filter="行业专项">行业专项</button>
+        <input type="text" id="interviewSearch" placeholder="搜索面试素材..." oninput="Modules.jobs.renderInterview()">
+      </div>
+      <div class="interview-actions-bar">
+        <button class="btn btn-outline" onclick="Modules.jobs.startQuiz()">📝 模拟自测</button>
+        <button class="btn btn-outline" onclick="Modules.jobs.showInterviewTags()">🏷️ 标签管理</button>
+      </div>
+      <div class="interview-list" id="interviewList"></div>
+    </div>
+  </section>
+
+  <!-- ==================== 经期记录 ==================== -->
+  <section class="module-page period-page" id="page-period">
+    <div class="page-header">
+      <h2>📅 月经日期记录</h2>
+    </div>
+    <div class="period-stats-row" id="periodStatsRow">
+      <div class="pstat-card">
+        <div class="pstat-label">近半年平均周期</div>
+        <div class="pstat-value" id="pstat-avgCycle">--天</div>
+      </div>
+      <div class="pstat-card">
+        <div class="pstat-label">平均持续天数</div>
+        <div class="pstat-value" id="pstat-avgDuration">--天</div>
+      </div>
+      <div class="pstat-card">
+        <div class="pstat-label">预估下次经期</div>
+        <div class="pstat-value" id="pstat-nextDate">--</div>
+      </div>
+    </div>
+    <div class="calendar-nav">
+      <button onclick="Modules.period.prevMonth()">◀</button>
+      <span class="calendar-title" id="calendarTitle"></span>
+      <button onclick="Modules.period.nextMonth()">▶</button>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+    <div class="period-legend">
+      <span class="legend-item"><span class="legend-dot started"></span> 经期开始</span>
+      <span class="legend-item"><span class="legend-dot active"></span> 经期中</span>
+      <span class="legend-item"><span class="legend-dot ended"></span> 经期结束</span>
+      <span class="legend-item"><span class="legend-dot predicted"></span> 预估</span>
+    </div>
+    <div class="period-actions">
+      <button class="btn btn-primary" onclick="Modules.period.markPeriod()">📝 标记经期</button>
+      <button class="btn btn-outline" onclick="Modules.period.exportPeriod()">📥 导出记录</button>
+      <button class="btn btn-danger-outline" onclick="Modules.period.clearAll()">🗑️ 清空数据</button>
+    </div>
+    <div class="period-history" id="periodHistory">
+      <h4>历史记录</h4>
+      <div id="periodHistoryList"><p class="empty-hint">暂无记录</p></div>
+    </div>
+  </section>
+
+  <!-- ==================== 资讯推送 ==================== -->
+  <section class="module-page" id="page-news">
+    <div class="page-header">
+      <h2>📰 资讯推送</h2>
+      <button class="btn btn-outline" onclick="Modules.news.refreshNews()">🔄 刷新资讯</button>
+    </div>
+    <div class="news-grid">
+      <!-- 小宇宙播客 -->
+      <div class="news-section podcast">
+        <h3>🎙️ 小宇宙播客</h3>
+        <div class="news-filter-bar">
+          <button class="nfilter-btn active" data-filter="today">今日新更</button>
+          <button class="nfilter-btn" data-filter="all">全部节目</button>
+          <button class="nfilter-btn" data-filter="unlistened">未收听</button>
+          <button class="nfilter-btn" data-filter="fav">已收藏</button>
+        </div>
+        <div class="news-list" id="newsList-podcast"></div>
+        <button class="btn btn-add" onclick="Modules.news.showAddDialog('podcast')">+ 手动添加播客</button>
+      </div>
+      <!-- 生动早咖啡 -->
+      <div class="news-section coffee">
+        <h3>☕ 生动早咖啡</h3>
+        <div class="news-list" id="newsList-coffee"></div>
+        <button class="btn btn-add" onclick="Modules.news.showAddDialog('coffee')">+ 手动录入</button>
+      </div>
+      <!-- 每日财经新闻 -->
+      <div class="news-section finance">
+        <h3>📈 每日财经新闻</h3>
+        <div class="news-tag-bar">
+          <button class="ntag-btn active" data-tag="all">全部</button>
+          <button class="ntag-btn" data-tag="政策">政策</button>
+          <button class="ntag-btn" data-tag="股市">股市</button>
+          <button class="ntag-btn" data-tag="汇率">汇率</button>
+          <button class="ntag-btn" data-tag="理财">理财</button>
+        </div>
+        <input type="text" id="financeSearch" placeholder="搜索财经资讯..." class="search-input" oninput="Modules.news.renderFinance()">
+        <div class="news-list" id="newsList-finance"></div>
+        <button class="btn btn-add" onclick="Modules.news.showAddDialog('finance')">+ 手动录入</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 全局弹窗 -->
+<div class="modal" id="globalModal">
+  <div class="modal-overlay" onclick="UI.closeModal()"></div>
+  <div class="modal-content" id="modalContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- 闹钟提醒弹窗 -->
+<div class="reminder-popup" id="reminderPopup" style="display:none">
+  <div class="reminder-card">
+    <div class="reminder-title">⏰ 提醒</div>
+    <div class="reminder-body" id="reminderBody"></div>
+    <button class="btn btn-primary" onclick="UI.dismissReminder()">知道了</button>
+  </div>
+</div>
+
+<script src="js/db.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/modules/overview.js"></script>
+<script src="js/modules/plans.js"></script>
+<script src="js/modules/fitness.js"></script>
+<script src="js/modules/accounting.js"></script>
+<script src="js/modules/english.js"></script>
+<script src="js/modules/reading.js"></script>
+<script src="js/modules/reflection.js"></script>
+<script src="js/modules/review.js"></script>
+<script src="js/modules/jobs.js"></script>
+<script src="js/modules/period.js"></script>
+<script src="js/modules/news.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

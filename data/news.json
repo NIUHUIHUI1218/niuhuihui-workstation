@@ -1,0 +1,37 @@
+{
+  "podcast": [
+    {
+      "source": "auto",
+      "title": "示例播客节目：如何高效管理个人时间",
+      "description": "本期节目邀请时间管理专家，分享适合职场人的时间管理技巧。",
+      "link": "https://www.xiaoyuzhoufm.com/",
+      "audioUrl": "",
+      "pubDate": "2026-07-30T06:00:00.000Z",
+      "isToday": true,
+      "status": "unread"
+    }
+  ],
+  "coffee": [
+    {
+      "source": "auto",
+      "title": "示例早咖啡：今日商业科技要闻",
+      "description": "每天15分钟，听懂商业世界。",
+      "link": "https://www.example.com/morning-coffee",
+      "audioUrl": "",
+      "pubDate": "2026-07-30T06:30:00.000Z",
+      "status": "unread"
+    }
+  ],
+  "finance": [
+    {
+      "source": "auto",
+      "title": "示例财经：央行发布最新货币政策",
+      "description": "今日央行宣布将保持流动性合理充裕，支持实体经济发展。",
+      "link": "https://www.example.com/finance",
+      "pubDate": "2026-07-30T07:00:00.000Z",
+      "tags": ["政策"],
+      "status": "unread"
+    }
+  ],
+  "fetchedAt": "2026-07-30T00:00:00.000Z"
+}
