@@ -254,22 +254,280 @@ Modules.accounting = {
     Utils.downloadFile(csv, `bills-${Utils.todayStr()}.csv`, 'text/csv');
   },
 
-  async importBills() {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = '.csv';
-    input.onchange = async (e) => {
-      const text = await e.target.files[0].text();
-      const rows = Utils.parseCSV(text);
-      for (const r of rows) {
-        await DB.put('transactions', {
-          date: r.date || Utils.todayStr(), type: r.type || 'expense',
-          amount: parseFloat(r.amount) || 0, title: r.title || '导入账单',
-          category: r.category, channel: r.channel, note: r.note
-        });
+  // 导入预览数据（临时存储）
+  _previewData: null,
+  _previewSource: null,
+
+  // ============ 多平台账单导入 ============
+  showImportDialog() {
+    const platformGuides = {
+      alipay: {
+        icon: '🔵', name: '支付宝',
+        steps: [
+          '打开支付宝 App → 我的 → 账单',
+          '点击右上角「...」→ 开具交易流水证明',
+          '选择时间范围 → 申请 → 填写邮箱',
+          '在邮箱中下载解压后的 CSV 文件',
+          '将此 CSV 文件拖入下方区域'
+        ],
+        color: '#1677FF'
+      },
+      wechat: {
+        icon: '🟢', name: '微信支付',
+        steps: [
+          '打开微信 → 我 → 服务 → 钱包 → 账单',
+          '点击右上角「常见问题」→ 下载账单',
+          '选择「用作证明材料」→ 选择时间范围',
+          '填写邮箱 → 确认 → 输入支付密码验证',
+          '在邮箱中下载解压后的 CSV 文件，拖入下方'
+        ],
+        color: '#07C160'
+      },
+      bank: {
+        icon: '🏦', name: '银行卡',
+        steps: [
+          '登录银行 App → 交易明细/账单',
+          '选择时间范围 → 导出/下载明细',
+          '将下载的 CSV 文件拖入下方区域'
+        ],
+        color: '#D4380D'
       }
-      this.render(); Modules.overview.render();
-      UI.toast('导入成功', 'success');
     };
-    input.click();
+
+    let guideHTML = '';
+    for (const key in platformGuides) {
+      const g = platformGuides[key];
+      guideHTML += `
+        <div class="import-guide-card" data-platform="${key}" onclick="Modules.accounting.selectPlatform('${key}')"
+             style="border-left: 3px solid ${g.color}">
+          <div class="import-guide-icon">${g.icon}</div>
+          <div class="import-guide-body">
+            <h4>${g.name}账单导入</h4>
+            <ol class="import-steps">
+              ${g.steps.map(s => `<li>${s}</li>`).join('')}
+            </ol>
+          </div>
+        </div>
+      `;
+    }
+
+    UI.showCustomModal(
+      '📥 导入平台账单',
+      `
+        <div class="import-container">
+          <p class="import-intro">选择账单来源平台，上传导出的 CSV 文件即可自动识别并导入。</p>
+          <div class="import-guides">${guideHTML}</div>
+          <div class="import-dropzone" id="importDropzone" style="display:none">
+            <div class="dropzone-inner">
+              <span class="dropzone-icon">📂</span>
+              <p>将 CSV 文件拖入此处，或点击选择</p>
+              <p class="dropzone-hint" id="dropzoneHint">当前平台：--</p>
+              <input type="file" id="importFileInput" accept=".csv" style="display:none">
+              <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFileInput').click()">选择文件</button>
+            </div>
+          </div>
+          <div class="import-preview" id="importPreview" style="display:none"></div>
+          <div class="import-progress" id="importProgress" style="display:none"></div>
+        </div>
+      `,
+      `<div class="modal-actions">
+        <button class="btn btn-outline" onclick="UI.closeModal()">取消</button>
+        <button class="btn btn-primary" id="importConfirmBtn" style="display:none" onclick="Modules.accounting.doImport()">确认导入</button>
+      </div>`
+    );
+
+    // 设置拖放区域
+    setTimeout(() => {
+      const dropzone = document.getElementById('importDropzone');
+      const fileInput = document.getElementById('importFileInput');
+      if (!dropzone || !fileInput) return;
+
+      fileInput.onchange = (e) => {
+        if (e.target.files[0]) this.handleImportFile(e.target.files[0]);
+      };
+
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+      dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('dragover'); });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) this.handleImportFile(e.dataTransfer.files[0]);
+      });
+    }, 200);
+  },
+
+  selectPlatform(platform) {
+    this._previewSource = platform;
+    document.querySelectorAll('.import-guide-card').forEach(c => c.classList.remove('selected'));
+    const card = document.querySelector(`.import-guide-card[data-platform="${platform}"]`);
+    if (card) card.classList.add('selected');
+
+    const dropzone = document.getElementById('importDropzone');
+    if (dropzone) dropzone.style.display = 'block';
+
+    const hint = document.getElementById('dropzoneHint');
+    const names = { alipay: '支付宝', wechat: '微信支付', bank: '银行卡' };
+    if (hint) hint.textContent = '当前平台：' + (names[platform] || platform);
+
+    // 清除之前的预览
+    const preview = document.getElementById('importPreview');
+    if (preview) preview.style.display = 'none';
+    const confirmBtn = document.getElementById('importConfirmBtn');
+    if (confirmBtn) confirmBtn.style.display = 'none';
+  },
+
+  async handleImportFile(file) {
+    try {
+      const text = await file.text();
+      const result = Utils.parseBillCSV(text, this._previewSource);
+
+      if (result.items.length === 0) {
+        UI.toast('未能从文件中识别到账单数据，请检查文件格式', 'error');
+        return;
+      }
+
+      this._previewData = result.items;
+      this._previewSource = result.source;
+
+      // 显示预览
+      const preview = document.getElementById('importPreview');
+      const progress = document.getElementById('importProgress');
+      if (preview) {
+        const incomeItems = result.items.filter(x => x.type === 'income');
+        const expenseItems = result.items.filter(x => x.type === 'expense');
+        const totalIncome = incomeItems.reduce((s, x) => s + x.amount, 0);
+        const totalExpense = expenseItems.reduce((s, x) => s + x.amount, 0);
+        const sourceNames = { alipay: '支付宝', wechat: '微信支付', bank: '银行卡', unknown: '未知' };
+
+        preview.innerHTML = `
+          <div class="preview-summary">
+            <div class="preview-stat">
+              <span class="preview-label">识别来源</span>
+              <span class="preview-value">${sourceNames[result.source] || result.source}</span>
+            </div>
+            <div class="preview-stat">
+              <span class="preview-label">账单条数</span>
+              <span class="preview-value">${result.items.length} 条</span>
+            </div>
+            <div class="preview-stat income">
+              <span class="preview-label">收入合计</span>
+              <span class="preview-value">${Utils.formatMoney(totalIncome)}</span>
+            </div>
+            <div class="preview-stat expense">
+              <span class="preview-label">支出合计</span>
+              <span class="preview-value">${Utils.formatMoney(totalExpense)}</span>
+            </div>
+          </div>
+          <div class="preview-table-wrap">
+            <table class="preview-table">
+              <thead><tr><th>日期</th><th>类型</th><th>名称</th><th>金额</th><th>分类</th><th>渠道</th></tr></thead>
+              <tbody>
+                ${result.items.slice(0, 20).map(x => `
+                  <tr>
+                    <td>${x.date}</td>
+                    <td>${x.type === 'income' ? '💰收入' : '💸支出'}</td>
+                    <td title="${Utils.escapeHtml(x.title)}">${Utils.escapeHtml(x.title).substring(0, 15)}${x.title.length > 15 ? '...' : ''}</td>
+                    <td class="${x.type}">${x.type === 'income' ? '+' : '-'}${Utils.formatMoney(x.amount)}</td>
+                    <td>${x.category}</td>
+                    <td><span class="tag-pill">${x.channel}</span></td>
+                  </tr>
+                `).join('')}
+                ${result.items.length > 20 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">... 还有 ${result.items.length - 20} 条</td></tr>` : ''}
+              </tbody>
+            </table>
+          </div>
+        `;
+        preview.style.display = 'block';
+      }
+
+      if (progress) progress.style.display = 'none';
+      const confirmBtn = document.getElementById('importConfirmBtn');
+      if (confirmBtn) {
+        confirmBtn.style.display = 'inline-block';
+        confirmBtn.textContent = `确认导入 ${result.items.length} 条账单`;
+      }
+
+      UI.toast(`识别到 ${result.items.length} 条账单`, 'success');
+    } catch (e) {
+      console.error('导入文件解析失败:', e);
+      UI.toast('文件解析失败，请检查文件格式', 'error');
+    }
+  },
+
+  async doImport() {
+    if (!this._previewData || this._previewData.length === 0) {
+      UI.toast('没有可导入的数据', 'error');
+      return;
+    }
+
+    const confirmBtn = document.getElementById('importConfirmBtn');
+    if (confirmBtn) confirmBtn.disabled = true;
+
+    const progress = document.getElementById('importProgress');
+    if (progress) {
+      progress.style.display = 'block';
+      progress.innerHTML = '<div class="progress-bar-wrap"><div class="progress-bar"><div class="progress-fill" id="importProgressFill" style="width:0%"></div></div><span class="progress-text" id="importProgressText">0/' + this._previewData.length + '</span></div>';
+    }
+
+    let imported = 0, skipped = 0;
+    const total = this._previewData.length;
+
+    // 先获取已有的 platformTxId 用于去重
+    const existing = await DB.getAll('transactions');
+    const existingTxIds = new Set();
+    for (const t of existing) {
+      if (t.platformTxId) existingTxIds.add(t.platformTxId);
+      // 也按 日期+金额+标题 组合去重
+      existingTxIds.add(t.date + '_' + t.amount + '_' + t.title);
+    }
+
+    for (let i = 0; i < this._previewData.length; i++) {
+      const item = this._previewData[i];
+      const dedupKey = item.date + '_' + item.amount + '_' + item.title;
+
+      if (item.platformTxId && existingTxIds.has(item.platformTxId)) {
+        skipped++; continue;
+      }
+      if (existingTxIds.has(dedupKey)) {
+        skipped++; continue;
+      }
+
+      await DB.put('transactions', {
+        date: item.date, type: item.type, amount: item.amount,
+        title: item.title, category: item.category, channel: item.channel,
+        note: item.note, platformTxId: item.platformTxId, source: item.source
+      });
+
+      if (item.platformTxId) existingTxIds.add(item.platformTxId);
+      existingTxIds.add(dedupKey);
+      imported++;
+
+      // 更新进度
+      if (progress && i % 5 === 0) {
+        const pct = Math.round((i / total) * 100);
+        const fill = document.getElementById('importProgressFill');
+        const text = document.getElementById('importProgressText');
+        if (fill) fill.style.width = pct + '%';
+        if (text) text.textContent = i + '/' + total;
+      }
+    }
+
+    if (progress) {
+      const fill = document.getElementById('importProgressFill');
+      const text = document.getElementById('importProgressText');
+      if (fill) fill.style.width = '100%';
+      if (text) text.textContent = total + '/' + total;
+    }
+
+    UI.closeModal();
+    this._previewData = null;
+    this._previewSource = null;
+
+    let msg = `✅ 成功导入 ${imported} 条`;
+    if (skipped > 0) msg += `，跳过 ${skipped} 条重复`;
+    UI.toast(msg, 'success');
+
+    this.render();
+    if (Modules.overview && Modules.overview.render) Modules.overview.render();
   }
 };

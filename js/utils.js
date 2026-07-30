@@ -151,6 +151,217 @@ const Utils = {
     });
   },
 
+  // ============ 账单导入解析器 ============
+
+  // 智能检测 CSV 来源平台
+  detectBillSource(headers) {
+    const h = headers.map(x => x.toLowerCase().replace(/[（(]\S+[)）]/g, '').trim());
+    const joined = h.join(' ');
+
+    if (joined.includes('交易时间') && joined.includes('收/支') && joined.includes('交易订单号')) return 'alipay';
+    if (joined.includes('交易时间') && joined.includes('收/支') && joined.includes('交易单号') && !joined.includes('交易订单号')) return 'wechat';
+    if (joined.includes('交易日期') && joined.includes('收支') && joined.includes('摘要')) return 'bank';
+
+    // 兼容工作台自身格式
+    if (joined.includes('date') && joined.includes('type') && joined.includes('amount')) return 'workstation';
+    return null;
+  },
+
+  // 解析支付宝账单 CSV
+  parseAlipayCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const headers = this.parseCSVLine(lines[0]);
+    const results = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = this.parseCSVLine(lines[i]);
+      if (row.length < 5) continue;
+      const map = {};
+      headers.forEach((h, idx) => { map[h.trim().replace(/[（(]\S+[)）]/g, '').trim()] = (row[idx] || '').trim(); });
+
+      const time = map['交易时间'] || map['交易日期'] || '';
+      const date = time.split(' ')[0] || time;
+      if (!date || date.length < 8) continue;
+
+      const typeRaw = map['收/支'] || map['收支'] || '';
+      const type = (typeRaw.includes('收入') || typeRaw.includes('入')) ? 'income' : 'expense';
+      const amount = parseFloat((map['金额'] || '0').replace(/[¥,，\s]/g, '')) || 0;
+      if (amount === 0) continue;
+
+      const title = map['商品说明'] || map['商品'] || map['交易对方'] || map['对方'] || '支付宝账单';
+      const channel = '支付宝';
+      const category = this.autoCategory(title, type);
+      const note = map['备注'] || '';
+      const txId = map['交易订单号'] || map['商户订单号'] || '';
+
+      results.push({
+        date: date.replace(/\//g, '-'),
+        type, amount, title, category, channel, note,
+        source: 'alipay',
+        platformTxId: txId
+      });
+    }
+    return results;
+  },
+
+  // 解析微信账单 CSV
+  parseWechatCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+
+    // 微信账单开头可能有多行表头信息
+    let headerIdx = 0;
+    for (let i = 0; i < Math.min(lines.length, 10); i++) {
+      if (lines[i].includes('交易时间') && (lines[i].includes('收/支') || lines[i].includes('收支'))) {
+        headerIdx = i; break;
+      }
+    }
+
+    const headers = this.parseCSVLine(lines[headerIdx]);
+    const results = [];
+
+    for (let i = headerIdx + 1; i < lines.length; i++) {
+      const row = this.parseCSVLine(lines[i]);
+      if (row.length < 5) continue;
+      const map = {};
+      headers.forEach((h, idx) => { map[h.trim().replace(/[（(]\S+[)）]/g, '').trim()] = (row[idx] || '').trim(); });
+
+      const time = map['交易时间'] || '';
+      const date = time.split(' ')[0] || time;
+      if (!date || date.length < 8) continue;
+
+      const typeRaw = map['收/支'] || map['收支'] || '';
+      const type = (typeRaw.includes('收入') || typeRaw.includes('入')) ? 'income' : 'expense';
+      const amount = parseFloat((map['金额'] || '0').replace(/[¥￥,，\s]/g, '')) || 0;
+      if (amount === 0) continue;
+
+      const title = map['商品'] || map['商品说明'] || map['交易对方'] || map['商户'] || '微信账单';
+      const channel = '微信';
+      const category = this.autoCategory(title, type);
+      const note = map['备注'] || map['交易类型'] || '';
+      const txId = map['交易单号'] || map['商户单号'] || '';
+
+      results.push({
+        date: date.replace(/\//g, '-'),
+        type, amount, title, category, channel, note,
+        source: 'wechat',
+        platformTxId: txId
+      });
+    }
+    return results;
+  },
+
+  // 解析银行账单 CSV
+  parseBankCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const headers = this.parseCSVLine(lines[0]);
+    const results = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = this.parseCSVLine(lines[i]);
+      if (row.length < 4) continue;
+      const map = {};
+      headers.forEach((h, idx) => { map[h.trim().replace(/[（(]\S+[)）]/g, '').trim()] = (row[idx] || '').trim(); });
+
+      const date = map['交易日期'] || map['日期'] || map['记账日期'] || '';
+      if (!date || date.length < 8) continue;
+
+      const amountIn = parseFloat((map['收入金额'] || map['贷方金额'] || '0').replace(/[,，\s]/g, '')) || 0;
+      const amountOut = parseFloat((map['支出金额'] || map['借方金额'] || '0').replace(/[,，\s]/g, '')) || 0;
+      const amount = amountIn || amountOut;
+      const type = amountIn > 0 ? 'income' : 'expense';
+      if (amount === 0) continue;
+
+      const title = map['摘要'] || map['交易摘要'] || map['对方户名'] || map['交易对方'] || '银行账单';
+      const channel = '银行卡';
+      const category = this.autoCategory(title, type);
+      const note = map['备注'] || '';
+
+      results.push({
+        date: date.replace(/\//g, '-'),
+        type, amount, title, category, channel, note,
+        source: 'bank',
+        platformTxId: ''
+      });
+    }
+    return results;
+  },
+
+  // 处理 CSV 行（兼容引号内的逗号）
+  parseCSVLine(line) {
+    const result = [];
+    let current = '', inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current); current = '';
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current);
+    return result;
+  },
+
+  // 智能分类
+  autoCategory(title, type) {
+    if (type === 'income') {
+      if (/工资|薪资|奖金|报销|津贴|兼职|稿费/.test(title)) return '工资';
+      if (/理财|基金|股票|收益|利息|分红/.test(title)) return '理财';
+      if (/红包|转账|退款/.test(title)) return '红包';
+      return '收入';
+    }
+
+    const rules = [
+      ['餐饮', /餐饮|美食|外卖|饭|餐|食堂|餐厅|美团|饿了么|奶茶|咖啡|水果|零食|超市|便利店/],
+      ['交通', /交通|打车|滴滴|地铁|公交|高铁|火车|机票|加油|停车|ETC|高速|充电/],
+      ['购物', /购物|淘宝|京东|拼多多|天猫|唯品会|抖音|快手|小红书|服装|鞋|包|饰品|数码|电器|家居|日用品/],
+      ['住房', /房租|房贷|水电|燃气|物业|维修|装修|家居/],
+      ['娱乐', /娱乐|电影|KTV|游戏|旅游|景点|酒店|演出|音乐|会员|视频|音乐|阅读/],
+      ['医疗', /医院|药|门诊|体检|医保|挂号/],
+      ['教育', /教育|书|培训|课程|学习|考试/],
+      ['通讯', /通讯|话费|流量|宽带|网络/],
+      ['转账', /转账|汇款|消费/],
+    ];
+
+    for (const [cat, re] of rules) {
+      if (re.test(title)) return cat;
+    }
+    return '其他';
+  },
+
+  // 统一账单解析入口
+  parseBillCSV(text, source = null) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return { source: 'unknown', items: [] };
+
+    const headers = this.parseCSVLine(lines[0]);
+
+    // 如果明确指定了来源
+    if (source === 'alipay') return { source: 'alipay', items: this.parseAlipayCSV(text) };
+    if (source === 'wechat') return { source: 'wechat', items: this.parseWechatCSV(text) };
+    if (source === 'bank') return { source: 'bank', items: this.parseBankCSV(text) };
+
+    // 自动检测
+    const detected = this.detectBillSource(headers);
+    if (detected === 'alipay') return { source: 'alipay', items: this.parseAlipayCSV(text) };
+    if (detected === 'wechat') return { source: 'wechat', items: this.parseWechatCSV(text) };
+    if (detected === 'bank') return { source: 'bank', items: this.parseBankCSV(text) };
+    if (detected === 'workstation') return { source: 'workstation', items: this.parseCSV(text) };
+
+    // 尝试逐个格式解析，看哪个能产生有效结果
+    for (const fmt of ['alipay', 'wechat', 'bank']) {
+      const items = this['parse' + fmt.charAt(0).toUpperCase() + fmt.slice(1) + 'CSV'](text);
+      if (items.length > 0) return { source: fmt, items };
+    }
+
+    return { source: 'unknown', items: [] };
+  },
+
   // 日期差天数
   daysBetween(a, b) {
     const da = new Date(a), db = new Date(b);
