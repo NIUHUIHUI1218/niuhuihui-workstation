@@ -13,6 +13,8 @@ Modules.english = {
   // 单词状态
   vocabSource: 'auto',
   vocabFilter: 'all',
+  vocabPage: 1,
+  vocabPageSize: 100,
 
   async init() {
     // 主tab切换
@@ -80,6 +82,7 @@ Modules.english = {
         document.querySelectorAll('#english-vocab .stab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         this.vocabSource = tab.dataset.source;
+        this.vocabPage = 1;
         this.renderVocab();
       });
     });
@@ -89,6 +92,7 @@ Modules.english = {
         document.querySelectorAll('#english-vocab .efilter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.vocabFilter = btn.dataset.filter;
+        this.vocabPage = 1;
         this.renderVocab();
       });
     });
@@ -183,10 +187,65 @@ Modules.english = {
     let list = all.filter(i => i.source === this.vocabSource);
     if (this.vocabFilter !== 'all') list = list.filter(i => i.status === this.vocabFilter || (this.vocabFilter === 'new' && !i.status));
     list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
     const el = document.getElementById('englishList-vocab');
-    el.innerHTML = list.length === 0
-      ? '<p class="empty-hint">暂无单词，点击"新增单词"或"导入单词表"添加</p>'
-      : list.map(w => this.renderVocabCard(w)).join('');
+    if (list.length === 0) {
+      el.innerHTML = '<p class="empty-hint">暂无单词，点击"新增单词"或"导入单词表"添加</p>';
+      return;
+    }
+
+    // 分页：每页100条
+    const totalPages = Math.ceil(list.length / this.vocabPageSize);
+    if (this.vocabPage > totalPages) this.vocabPage = 1;
+    const startIdx = (this.vocabPage - 1) * this.vocabPageSize;
+    const pageList = list.slice(startIdx, startIdx + this.vocabPageSize);
+
+    let html = pageList.map(w => this.renderVocabCard(w)).join('');
+
+    // 分页导航
+    if (totalPages > 1) {
+      html += this.renderVocabPagination(this.vocabPage, totalPages, list.length, startIdx, pageList.length);
+    }
+
+    el.innerHTML = html;
+  },
+
+  renderVocabPagination(page, totalPages, total, startIdx, currentCount) {
+    const maxButtons = 7; // 最多显示7个页码按钮
+    let startPage = Math.max(1, page - 3);
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    if (endPage - startPage < maxButtons - 1) startPage = Math.max(1, endPage - maxButtons + 1);
+
+    let buttons = '';
+    if (startPage > 1) {
+      buttons += `<button class="vocab-page-btn" onclick="Modules.english.changeVocabPage(1)">1</button>`;
+      if (startPage > 2) buttons += `<span class="vocab-page-dots">...</span>`;
+    }
+    for (let p = startPage; p <= endPage; p++) {
+      buttons += `<button class="vocab-page-btn ${p === page ? 'active' : ''}" onclick="Modules.english.changeVocabPage(${p})">${p}</button>`;
+    }
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) buttons += `<span class="vocab-page-dots">...</span>`;
+      buttons += `<button class="vocab-page-btn" onclick="Modules.english.changeVocabPage(${totalPages})">${totalPages}</button>`;
+    }
+
+    return `
+      <div class="vocab-pagination">
+        <span class="vocab-page-info">第 ${startIdx + 1}-${startIdx + currentCount} 条，共 ${total} 个单词</span>
+        <div class="vocab-page-controls">
+          <button class="vocab-page-btn" ${page <= 1 ? 'disabled' : ''} onclick="Modules.english.changeVocabPage(${page - 1})">‹ 上一页</button>
+          ${buttons}
+          <button class="vocab-page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="Modules.english.changeVocabPage(${page + 1})">下一页 ›</button>
+        </div>
+      </div>
+    `;
+  },
+
+  changeVocabPage(page) {
+    this.vocabPage = page;
+    this.renderVocab();
+    // 滚动到单词列表顶部
+    document.getElementById('englishList-vocab').scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   renderVocabCard(w) {
@@ -236,8 +295,8 @@ Modules.english = {
         </div>
         <div class="form-group" id="eng-import-file" style="display:none">
           <label>上传文件</label>
-          <input type="file" id="eng-import-file-input" accept=".txt,.csv,.json,.md,.pdf,.xlsx,.xls">
-          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">支持 txt/csv/json/md/pdf/xlsx/xls 格式的素材文件<br>PDF/Excel 仅单词导入可用</p>
+          <input type="file" id="eng-import-file-input" accept=".txt,.csv,.json,.md,.pdf,.xlsx,.xls" multiple>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">支持多选上传 txt/csv/json/md/pdf/xlsx/xls 格式文件<br>PDF/Excel 仅单词导入可用，可同时上传多个文件</p>
         </div>
         ${sub !== 'vocab' ? `
         <div class="form-group">
@@ -278,117 +337,46 @@ Modules.english = {
       });
     } else {
       const fileInput = document.getElementById('eng-import-file-input');
-      if (!fileInput.files[0]) { UI.toast('请选择文件'); return; }
-      const file = fileInput.files[0];
-      const fileName = file.name;
+      if (!fileInput.files.length) { UI.toast('请选择文件'); return; }
 
       if (sub === 'vocab') {
-        let rows = []; // 每行：[word, definition, example?]
-        const ext = fileName.split('.').pop().toLowerCase();
+        // 支持多文件上传：逐个解析后汇总导入
+        let allRows = []; // 每行：[word, definition, example?]
+        const files = Array.from(fileInput.files);
 
-        if (ext === 'xlsx' || ext === 'xls') {
-          // Excel 单词表：第1列=单词, 第2列=释义, 第3列=例句(可选)
-          const ab = await file.arrayBuffer();
-          const wb = XLSX.read(ab, { type: 'array' });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-          for (const row of data) {
-            if (!row || row.length < 2) continue;
-            const word = String(row[0] || '').trim();
-            const def = String(row[1] || '').trim();
-            if (!word || !def) continue;
-            // 跳过表头行
-            if (/^单词|^word|^词汇|^英语|^序号|^English/i.test(word)) continue;
-            rows.push([word, def, String(row[2] || '').trim()]);
-          }
-        } else if (ext === 'pdf') {
-          // PDF 单词表：提取文本后按行解析
+        for (let fi = 0; fi < files.length; fi++) {
+          const file = files[fi];
+          const fileName = file.name;
           try {
-            UI.toast('正在解析PDF文件...', 'info');
-            const ab = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-            let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i);
-              const content = await page.getTextContent();
-              const texts = content.items.map(item => item.str);
-              fullText += texts.join(' ') + '\n';
-            }
-            const lines = fullText.trim().split('\n').map(l => l.trim()).filter(Boolean);
-            for (const line of lines) {
-              // 尝试多种分隔符：逗号、制表符、多个空格
-              let parts = [];
-              if (line.includes('\t')) {
-                parts = line.split('\t').map(s => s.trim()).filter(Boolean);
-              } else if (line.includes(',')) {
-                parts = line.split(',').map(s => s.trim()).filter(Boolean);
-              } else {
-                // 用2个以上空格分隔
-                parts = line.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
-              }
-              if (parts.length >= 2) {
-                const word = parts[0];
-                const def = parts[1];
-                if (word.length < 50 && def.length < 200) {
-                  rows.push([word, def, parts[2] || '']);
-                }
-              }
-            }
-          } catch (pdfErr) {
-            console.error('PDF解析失败:', pdfErr);
-            UI.toast('PDF解析失败，请确认文件是否损坏', 'error');
-            return;
-          }
-        } else {
-          // txt/csv/json/md 格式
-          const text = await file.text();
-          if (ext === 'json') {
-            try {
-              const data = JSON.parse(text);
-              const arr = Array.isArray(data) ? data : (data.words || data.vocabulary || []);
-              for (const item of arr) {
-                if (typeof item === 'object') {
-                  rows.push([item.word || item.en || '', item.definition || item.meaning || item.zh || '', item.example || item.sentence || '']);
-                } else if (typeof item === 'string') {
-                  const parts = item.split(/[,，\t]/).map(s => s.trim()).filter(Boolean);
-                  if (parts.length >= 2) rows.push([parts[0], parts[1], parts[2] || '']);
-                }
-              }
-            } catch (e) { UI.toast('JSON格式无效', 'error'); return; }
-          } else {
-            // txt/csv/md: 按行解析
-            const lines = text.trim().split('\n');
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed) continue;
-              // 跳过 markdown 标题、列表标记
-              const clean = trimmed.replace(/^[#\-\*\d+\.]\s*/, '');
-              const parts = clean.split(/[,，\t]/).map(s => s.trim()).filter(Boolean);
-              if (parts.length >= 2) {
-                rows.push([parts[0], parts[1], parts[2] || '']);
-              }
-            }
+            const rows = await this.parseVocabFile(file, fi === 0);
+            allRows = allRows.concat(rows);
+          } catch (err) {
+            console.error(`解析文件 ${fileName} 失败:`, err);
+            UI.toast(`文件「${fileName}」解析失败，已跳过`, 'warning');
           }
         }
 
-        if (rows.length === 0) {
+        if (allRows.length === 0) {
           UI.toast('未能从文件中解析到单词数据，请检查文件格式', 'warning');
           return;
         }
 
         let imported = 0;
-        for (const [word, definition, example] of rows) {
+        for (const [word, definition, example] of allRows) {
           await DB.put(store, {
             source: 'manual', word, definition,
             example: example || '', status: 'new', createdAt: Date.now()
           });
           imported++;
         }
-        UI.toast(`成功导入 ${imported} 个单词`, 'success');
+        UI.toast(`成功从 ${files.length} 个文件导入 ${imported} 个单词`, 'success');
         UI.closeModal();
+        this.vocabPage = 1; // 重置到第一页
         this.render();
         return;
       } else {
+        // 口语/听力：仅取第一个文件
+        const file = fileInput.files[0];
         const text = await file.text();
         await DB.put(store, {
           source: 'manual', category: cat,
@@ -403,7 +391,90 @@ Modules.english = {
     this.render();
   },
 
-  // 刷新热门素材
+  // 解析单个单词文件，返回 rows: [[word, definition, example?], ...]
+  async parseVocabFile(file, showProgress) {
+    const fileName = file.name;
+    const ext = fileName.split('.').pop().toLowerCase();
+    const rows = [];
+
+    if (ext === 'xlsx' || ext === 'xls') {
+      // Excel 单词表：第1列=单词, 第2列=释义, 第3列=例句(可选)
+      const ab = await file.arrayBuffer();
+      const wb = XLSX.read(ab, { type: 'array' });
+      // 遍历所有 sheet，汇总所有单词
+      for (const sheetName of wb.SheetNames) {
+        const ws = wb.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        for (const row of data) {
+          if (!row || row.length < 2) continue;
+          const word = String(row[0] || '').trim();
+          const def = String(row[1] || '').trim();
+          if (!word || !def) continue;
+          // 跳过表头行
+          if (/^单词|^word|^词汇|^英语|^序号|^English/i.test(word)) continue;
+          rows.push([word, def, String(row[2] || '').trim()]);
+        }
+      }
+    } else if (ext === 'pdf') {
+      if (showProgress) UI.toast('正在解析PDF文件...', 'info');
+      const ab = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const texts = content.items.map(item => item.str);
+        fullText += texts.join(' ') + '\n';
+      }
+      const lines = fullText.trim().split('\n').map(l => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        let parts = [];
+        if (line.includes('\t')) {
+          parts = line.split('\t').map(s => s.trim()).filter(Boolean);
+        } else if (line.includes(',')) {
+          parts = line.split(',').map(s => s.trim()).filter(Boolean);
+        } else {
+          parts = line.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+        }
+        if (parts.length >= 2) {
+          const word = parts[0];
+          const def = parts[1];
+          if (word.length < 50 && def.length < 200) {
+            rows.push([word, def, parts[2] || '']);
+          }
+        }
+      }
+    } else {
+      // txt/csv/json/md 格式
+      const text = await file.text();
+      if (ext === 'json') {
+        const data = JSON.parse(text);
+        const arr = Array.isArray(data) ? data : (data.words || data.vocabulary || []);
+        for (const item of arr) {
+          if (typeof item === 'object') {
+            rows.push([item.word || item.en || '', item.definition || item.meaning || item.zh || '', item.example || item.sentence || '']);
+          } else if (typeof item === 'string') {
+            const parts = item.split(/[,，\t]/).map(s => s.trim()).filter(Boolean);
+            if (parts.length >= 2) rows.push([parts[0], parts[1], parts[2] || '']);
+          }
+        }
+      } else {
+        // txt/csv/md: 按行解析
+        const lines = text.trim().split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          // 跳过 markdown 标题、列表标记
+          const clean = trimmed.replace(/^[#\-\*\d+\.]\s*/, '');
+          const parts = clean.split(/[,，\t]/).map(s => s.trim()).filter(Boolean);
+          if (parts.length >= 2) {
+            rows.push([parts[0], parts[1], parts[2] || '']);
+          }
+        }
+      }
+    }
+    return rows;
+  },
   async refreshHot() {
     UI.toast('正在获取热门素材...');
     try {
