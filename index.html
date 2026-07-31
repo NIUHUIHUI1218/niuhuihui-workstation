@@ -6,7 +6,7 @@
 <title>牛慧慧专属一体化工作台</title>
 <link rel="icon" type="image/png" href="favicon-cow.png">
 <link rel="apple-touch-icon" href="icon-cow.png">
-<link rel="stylesheet" href="css/style.css?v=20260731-1">
+<link rel="stylesheet" href="css/style.css?v=20260731-2">
 </head>
 <body>
 <!-- 顶部栏（手机端显示） -->
@@ -263,6 +263,7 @@
         <h3>每日口语练习</h3>
         <button class="btn btn-primary" onclick="Modules.english.showAddDialog('speaking')">+ 新增素材</button>
         <button class="btn btn-outline" onclick="Modules.english.showImportDialog('speaking')">📥 导入素材</button>
+        <button class="btn btn-refresh" onclick="Modules.english.refreshSpeaking()">🔄 刷新技术口语</button>
       </div>
       <div class="english-cat-tabs">
         <button class="ecat-btn active" data-cat="all">全部</button>
@@ -281,6 +282,7 @@
         <h3>每日听力练习</h3>
         <button class="btn btn-primary" onclick="Modules.english.showAddDialog('listening')">+ 新增素材</button>
         <button class="btn btn-outline" onclick="Modules.english.showImportDialog('listening')">📥 导入素材</button>
+        <button class="btn btn-refresh" onclick="Modules.english.refreshListening()">🔄 刷新技术听力</button>
       </div>
       <div class="english-cat-tabs">
         <button class="ecat-btn active" data-cat="all">全部</button>
@@ -566,23 +568,23 @@
   </div>
 </div>
 
-<script src="js/libs/xlsx.full.min.js?v=20260731-1"></script>
+<script src="js/libs/xlsx.full.min.js?v=20260731-2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 </script>
-<script src="js/db.js?v=20260731-1"></script>
-<script src="js/utils.js?v=20260731-1"></script>
-<script src="js/sync.js?v=20260731-1"></script>
-<script src="js/modules/overview.js?v=20260731-1"></script>
-<script src="js/modules/fitness.js?v=20260731-1"></script>
-<script src="js/modules/accounting.js?v=20260731-1"></script>
-<script src="js/modules/english.js?v=20260731-1"></script>
-<script src="js/modules/reading.js?v=20260731-1"></script>
-<script src="js/modules/reflection.js?v=20260731-1"></script>
-<script src="js/modules/jobs.js?v=20260731-1"></script>
-<script src="js/modules/period.js?v=20260731-1"></script>
-<script src="js/app.js?v=20260731-1"></script>
+<script src="js/db.js?v=20260731-2"></script>
+<script src="js/utils.js?v=20260731-2"></script>
+<script src="js/sync.js?v=20260731-2"></script>
+<script src="js/modules/overview.js?v=20260731-2"></script>
+<script src="js/modules/fitness.js?v=20260731-2"></script>
+<script src="js/modules/accounting.js?v=20260731-2"></script>
+<script src="js/modules/english.js?v=20260731-2"></script>
+<script src="js/modules/reading.js?v=20260731-2"></script>
+<script src="js/modules/reflection.js?v=20260731-2"></script>
+<script src="js/modules/jobs.js?v=20260731-2"></script>
+<script src="js/modules/period.js?v=20260731-2"></script>
+<script src="js/app.js?v=20260731-2"></script>
 
 <!-- 诊断脚本：验证所有模块是否正确加载 -->
 <script>

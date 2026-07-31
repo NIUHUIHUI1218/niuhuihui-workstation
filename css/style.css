@@ -493,8 +493,19 @@ body {
 
 /* 听力卡片 */
 .listening-card .audio-player {
-  width: 100%; margin: 10px 0;
+  width: 100%; margin: 10px 0; max-width: 500px;
 }
+
+/* 刷新按钮 */
+.btn-refresh {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: #fff !important; border: none !important;
+  font-weight: 600; transition: all 0.2s;
+}
+.btn-refresh:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+
+/* 音频标签 */
+.tag-pill.audio { background: #fef3c7; color: #d97706; }
 
 /* ========== 读书笔记（左右双栏布局） ========== */
 .reading-dual {

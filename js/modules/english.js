@@ -132,6 +132,7 @@ Modules.english = {
         ${i.culturalTips ? `<div class="ec-phrases"><strong>跨文化小贴士：</strong>${Utils.escapeHtml(i.culturalTips)}</div>` : ''}
         ${i.myNotes ? `<div class="ec-phrases"><strong>我的笔记：</strong>${Utils.escapeHtml(i.myNotes)}</div>` : ''}
         <div class="ec-actions">
+          <button class="btn btn-sm btn-outline" onclick="Modules.english.speakSpeaking('${i.id}')">🔊 朗读</button>
           <button class="btn btn-sm btn-outline" onclick="Modules.english.addNotes('${i.id}', 'speaking')">📝 笔记</button>
           <button class="btn btn-sm btn-outline" onclick="Modules.english.addToPlan('${i.id}', 'speaking')">📅 加入计划</button>
           <button class="btn btn-sm btn-outline" onclick="Modules.english.markDone('${i.id}', 'speaking')">✅ 完成</button>
@@ -157,16 +158,18 @@ Modules.english = {
   },
 
   renderListeningCard(i) {
+    const audioSrc = i.audioData || i.audioUrl || '';
     return `
       <div class="english-card listening-card">
         <div class="ec-header">
           <span class="ec-category">${(i.category === 'work' || i.category === 'business') ? '💼 工作' : '🏠 日常'}</span>
           <span class="ec-category ml-8">${i.status === 'done' ? '已完成' : (i.status === 'review' ? '待复习' : '未练习')}</span>
           ${i.hot ? '<span class="tag-pill hot">🔥 热门</span>' : ''}
+          ${i.audioFile ? '<span class="tag-pill audio">🎵 音频</span>' : ''}
         </div>
         <div class="ec-title">${Utils.escapeHtml(i.title)}</div>
         <div class="ec-content">${Utils.escapeHtml(i.content || '')}</div>
-        ${i.audioUrl ? `<audio class="audio-player" controls src="${i.audioUrl}"></audio>` : ''}
+        ${audioSrc ? `<audio class="audio-player" controls src="${audioSrc}" preload="metadata" onerror="this.style.display='none'"></audio>` : ''}
         ${i.exercises ? `<div class="ec-phrases"><strong>课后习题：</strong>${Utils.escapeHtml(i.exercises)}</div>` : ''}
         ${i.myNotes ? `<div class="ec-phrases"><strong>我的笔记：</strong>${Utils.escapeHtml(i.myNotes)}</div>` : ''}
         <div class="ec-actions">
@@ -295,8 +298,8 @@ Modules.english = {
         </div>
         <div class="form-group" id="eng-import-file" style="display:none">
           <label>上传文件</label>
-          <input type="file" id="eng-import-file-input" accept=".txt,.csv,.json,.md,.pdf,.xlsx,.xls" multiple>
-          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">支持多选上传 txt/csv/json/md/pdf/xlsx/xls 格式文件<br>PDF/Excel 仅单词导入可用，可同时上传多个文件</p>
+          <input type="file" id="eng-import-file-input" accept="${sub === 'listening' ? '.mp3,.wav,.ogg,.m4a,.txt,.csv,.json,.md,.pdf,.xlsx,.xls' : '.txt,.csv,.json,.md,.pdf,.xlsx,.xls'}" multiple>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">${sub === 'listening' ? '支持上传音频(.mp3/.wav/.ogg/.m4a)和文本格式的多文件<br>音频文件将可在工作台内直接播放' : '支持多选上传 txt/csv/json/md/pdf/xlsx/xls 格式文件<br>PDF/Excel 仅单词导入可用，可同时上传多个文件'}</p>
         </div>
         ${sub !== 'vocab' ? `
         <div class="form-group">
@@ -375,15 +378,50 @@ Modules.english = {
         this.render();
         return;
       } else {
-        // 口语/听力：仅取第一个文件
-        const file = fileInput.files[0];
-        const text = await file.text();
-        await DB.put(store, {
-          source: 'manual', category: cat,
-          title: file.name.replace(/\.[^.]+$/, ''),
-          content: text.substring(0, 5000),
-          createdAt: Date.now()
-        });
+        // 口语/听力：处理多文件导入
+        let importedCount = 0;
+        const files = Array.from(fileInput.files);
+
+        for (let fi = 0; fi < files.length; fi++) {
+          const file = files[fi];
+          const ext = file.name.split('.').pop().toLowerCase();
+          const isAudio = /^(mp3|wav|ogg|m4a|aac|flac)$/i.test(ext);
+
+          if (sub === 'listening' && isAudio) {
+            // 音频文件：读取为 data URL 以供播放
+            try {
+              const audioData = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+              });
+              await DB.put(store, {
+                source: 'manual', category: cat,
+                title: file.name.replace(/\.[^.]+$/, ''),
+                content: `[音频] ${file.name}`,
+                audioData: audioData,
+                audioFile: true,
+                createdAt: Date.now()
+              });
+              importedCount++;
+            } catch (err) {
+              console.error('audio import error:', err);
+              UI.toast(`音频「${file.name}」导入失败`, 'warning');
+            }
+          } else {
+            // 文本文件
+            const text = await file.text();
+            await DB.put(store, {
+              source: 'manual', category: cat,
+              title: file.name.replace(/\.[^.]+$/, ''),
+              content: text.substring(0, 5000),
+              createdAt: Date.now()
+            });
+            importedCount++;
+          }
+        }
+        UI.toast(`成功导入 ${importedCount} 个素材`, 'success');
       }
     }
     UI.closeModal();
@@ -478,7 +516,7 @@ Modules.english = {
   async refreshHot() {
     UI.toast('正在获取热门素材...');
     try {
-      const res = await fetch('data/english.json');
+      const res = await fetch(`data/english.json?t=${Date.now()}`);
       if (!res.ok) { UI.toast('暂无热门素材数据', 'warning'); return; }
       const data = await res.json();
       let count = 0;
@@ -501,10 +539,69 @@ Modules.english = {
         }
       }
       this.render();
-      UI.toast(`获取了 ${count} 条新素材`, 'success');
+      UI.toast(count > 0 ? `获取了 ${count} 条新素材`, 'success');
     } catch (e) {
       console.error('refreshHot', e);
       UI.toast('获取热门素材失败，请检查网络', 'error');
+    }
+  },
+
+  // 独立刷新口语素材
+  async refreshSpeaking() {
+    UI.toast('正在刷新口语素材...');
+    try {
+      const res = await fetch(`data/english.json?t=${Date.now()}`);
+      if (!res.ok) { UI.toast('暂无口语数据', 'warning'); return; }
+      const data = await res.json();
+      let count = 0;
+      if (data.speaking) {
+        const existing = await DB.getAll('englishSpeaking');
+        for (const item of data.speaking) {
+          const exists = existing.find(e => e.title === item.title && e.source === 'auto');
+          if (!exists) { await DB.put('englishSpeaking', { ...item, source: 'auto', hot: true, createdAt: Date.now() }); count++; }
+          else if (item.phrases && !exists.phrases) {
+            // 已有素材但有更多信息，更新补全
+            exists.phrases = item.phrases;
+            exists.culturalTips = item.culturalTips;
+            exists.dialogue = item.dialogue;
+            await DB.put('englishSpeaking', exists);
+          }
+        }
+      }
+      this.renderSpeaking();
+      UI.toast(count > 0 ? `获取了 ${count} 条新口语素材` : '已是最新口语素材', 'success');
+    } catch (e) {
+      console.error('refreshSpeaking', e);
+      UI.toast('刷新口语素材失败', 'error');
+    }
+  },
+
+  // 独立刷新听力素材
+  async refreshListening() {
+    UI.toast('正在刷新听力素材...');
+    try {
+      const res = await fetch(`data/english.json?t=${Date.now()}`);
+      if (!res.ok) { UI.toast('暂无听力数据', 'warning'); return; }
+      const data = await res.json();
+      let count = 0;
+      if (data.listening) {
+        const existing = await DB.getAll('englishListening');
+        for (const item of data.listening) {
+          const exists = existing.find(e => e.title === item.title && e.source === 'auto');
+          if (!exists) { await DB.put('englishListening', { ...item, source: 'auto', hot: true, createdAt: Date.now() }); count++; }
+          else if (item.audioUrl && !exists.audioUrl) {
+            // 补全音频链接
+            exists.audioUrl = item.audioUrl;
+            exists.exercises = item.exercises || exists.exercises;
+            await DB.put('englishListening', exists);
+          }
+        }
+      }
+      this.renderListening();
+      UI.toast(count > 0 ? `获取了 ${count} 条新听力素材` : '已是最新听力素材', 'success');
+    } catch (e) {
+      console.error('refreshListening', e);
+      UI.toast('刷新听力素材失败', 'error');
     }
   },
 
@@ -700,6 +797,42 @@ Modules.english = {
       date: Utils.todayStr(), category: 'english'
     });
     UI.toast('已加入今日计划', 'success'); Modules.overview.render();
+  },
+
+  // ========== 朗读功能 (Web Speech API) ==========
+  async speakSpeaking(id) {
+    if (!('speechSynthesis' in window)) { UI.toast('浏览器不支持语音朗读', 'warning'); return; }
+    // 停止当前朗读
+    window.speechSynthesis.cancel();
+    const item = await DB.get('englishSpeaking', id);
+    if (!item) return;
+
+    // 构建朗读文本：交替朗读对话
+    const dialogue = item.dialogue || [];
+    const lines = [];
+    if (dialogue.length > 0) {
+      for (const line of dialogue) {
+        lines.push(`${line.role === 'you' ? 'You say' : 'Client says'}: ${line.text}`);
+      }
+    } else if (item.content) {
+      lines.push(item.content);
+    } else {
+      UI.toast('没有可朗读的内容', 'warning'); return;
+    }
+
+    const text = lines.join('. ');
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+
+    // 尝试选择英文语音
+    const voices = window.speechSynthesis.getVoices();
+    const enVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+    if (enVoice) utterance.voice = enVoice;
+
+    window.speechSynthesis.speak(utterance);
+    UI.toast('🔊 开始朗读...', 'info');
   },
 
   // ========== 加载自动数据 ==========
