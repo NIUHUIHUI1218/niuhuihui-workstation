@@ -504,6 +504,19 @@ body {
 }
 .btn-refresh:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
 
+/* 跨日延续标签（昨日延续过来的任务） */
+.carry-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
 /* 音频标签 */
 .tag-pill.audio { background: #fef3c7; color: #d97706; }
 

@@ -135,6 +135,9 @@ Modules.plans = {
   },
 
   async render() {
+    // 跨日自动延续：把昨天及之前的未完成计划复制一份到今天
+    await this.migrateCarryOver();
+
     const plans = await DB.getAll('plans');
     const today = Utils.todayStr();
     const todayPlans = plans.filter(p => p.date === today || p.repeat === 'daily' || this.isRepeatDay(p));
@@ -158,12 +161,13 @@ Modules.plans = {
       <input type="number" class="task-progress-input" value="${p.progress || 0}" min="0" max="100"
         onchange="Modules.plans.updateProgress('${p.id}', this.value)">%
     ` : '';
+    const carryOverTag = p.carriedFromId ? `<span class="carry-tag" title="来源：${p.originalDate || ''} 延续">↪️ 昨日延续</span>` : '';
     return `
       <div class="task-item ${statusClass}">
         <input type="checkbox" class="task-check" ${p.status === 'done' ? 'checked' : ''}
           onchange="Modules.plans.toggleStatus('${p.id}', this.checked)">
         <div class="task-body">
-          <div class="task-title">${Utils.escapeHtml(p.title)}</div>
+          <div class="task-title">${Utils.escapeHtml(p.title)} ${carryOverTag}</div>
           <div class="task-meta">
             ${p.deadline ? `<span>⏰ ${p.deadline.replace('T', ' ')}</span>` : ''}
             ${p.repeat ? `<span>🔁 ${p.repeat === 'daily' ? '每日' : '每周'}</span>` : ''}
@@ -183,6 +187,49 @@ Modules.plans = {
       return new Date(plan.date).getDay() === new Date().getDay();
     }
     return false;
+  },
+
+  /**
+   * 跨日自动延续：每天首次进入页面时，把昨天及之前未完成且非重复的计划
+   * 自动复制一份到今天。原计划标记 carryOver=true 避免重复复制。
+   */
+  async migrateCarryOver() {
+    const plans = await DB.getAll('plans');
+    const today = Utils.todayStr();
+    let migrated = 0;
+
+    for (const p of plans) {
+      // 跳过已完成、每天重复、每周重复的
+      if (p.status === 'done') continue;
+      if (p.repeat === 'daily' || p.repeat === 'weekly') continue;
+      // 必须有有效日期，且日期早于今天
+      if (!p.date || p.date >= today) continue;
+      // 已经为这个原计划生成过副本
+      if (p.carryOver) continue;
+
+      // 创建今日副本
+      const clone = { ...p };
+      delete clone.carryOver;
+      delete clone.carriedFromId;
+      clone.id = undefined; // 让 DB 重新生成 id
+      clone.date = today;
+      clone.status = p.status === 'doing' ? 'doing' : 'todo';
+      clone.progress = p.progress || 0;
+      clone.createdAt = Date.now();
+      clone.carriedFromId = p.id;
+      clone.originalDate = p.date;
+      await DB.put('plans', clone);
+      migrated++;
+
+      // 在原计划上标记 carryOver，避免后续重复创建
+      p.carryOver = true;
+      p.carryOverTo = today;
+      await DB.put('plans', p);
+    }
+
+    if (migrated > 0) {
+      console.log(`[plans] 跨日延续: 为 ${migrated} 个未完成任务创建了今日副本`);
+    }
   },
 
   async toggleStatus(id, checked) {
