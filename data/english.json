@@ -2,365 +2,163 @@
   "speaking": [
     {
       "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Why do people buy gold?",
-      "content": "Do you own anything made from real gold?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-261015",
+      "category": "work",
+      "title": "商务会议开场白",
+      "dialogue": [
+        {
+          "role": "you",
+          "text": "Good morning everyone, let's get started with today's agenda."
+        },
+        {
+          "role": "client",
+          "text": "Sure, I'd like to go over the quarterly report first."
+        }
+      ],
+      "phrases": "get started: 开始; go over: 回顾/检查; quarterly report: 季度报告",
       "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
+      "createdAt": 1792657398977
+    },
+    {
+      "source": "auto",
+      "category": "work",
+      "title": "面试自我介绍",
+      "dialogue": [
+        {
+          "role": "you",
+          "text": "Tell me about yourself and your professional background."
+        },
+        {
+          "role": "client",
+          "text": "I have five years of experience in digital marketing, specializing in content strategy and social media management."
+        }
+      ],
+      "phrases": "professional background: 职业背景; specializing in: 专攻于",
+      "hot": true,
+      "createdAt": 1792657398977
     },
     {
       "source": "auto",
       "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Are people drinking less alcohol?",
-      "content": "Do you drink alcoholic drinks?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-261008",
+      "title": "餐厅点餐",
+      "dialogue": [
+        {
+          "role": "you",
+          "text": "Hi, I'd like to order the grilled salmon with a side salad, please."
+        },
+        {
+          "role": "client",
+          "text": "Excellent choice! Would you like any drinks with that?"
+        }
+      ],
+      "phrases": "I'd like to order: 我想点; side salad: 配菜沙拉",
       "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
+      "createdAt": 1792657398977
     },
     {
       "source": "auto",
       "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Why does heartbreak hurt so much?",
-      "content": "Have you ever had your heart broken?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-261001",
+      "title": "问路指路",
+      "dialogue": [
+        {
+          "role": "you",
+          "text": "Excuse me, could you tell me how to get to the nearest subway station?"
+        },
+        {
+          "role": "client",
+          "text": "Sure, just go straight for two blocks, then turn left at the traffic light."
+        }
+      ],
+      "phrases": "how to get to: 怎么去; go straight: 直走; turn left: 左转",
       "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
+      "createdAt": 1792657398977
+    },
+    {
+      "source": "auto",
+      "category": "work",
+      "title": "客户电话沟通",
+      "dialogue": [
+        {
+          "role": "you",
+          "text": "I'm calling to follow up on the proposal we sent last week."
+        },
+        {
+          "role": "client",
+          "text": "Thanks for following up. We've reviewed it and have a few questions."
+        }
+      ],
+      "phrases": "follow up on: 跟进; proposal: 提案",
+      "hot": true,
+      "createdAt": 1792657398977
     },
     {
       "source": "auto",
       "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Why do we itch?",
-      "content": "What makes you feel itchy?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260924",
+      "title": "旅行订酒店",
+      "dialogue": [
+        {
+          "role": "you",
+          "text": "I'd like to check in. I have a reservation under the name Wang."
+        },
+        {
+          "role": "client",
+          "text": "Let me look that up. Yes, a deluxe room for three nights, is that correct?"
+        }
+      ],
+      "phrases": "check in: 入住; reservation: 预订; deluxe room: 豪华房",
       "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Is rejection good for us?",
-      "content": "How do you feel about being rejected?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260917",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Can apps teach you a language?",
-      "content": "What's better for learning languages – an app or a class?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260910",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Climate change and extreme weather",
-      "content": "Every year we see damage, death and destruction caused by hurricanes, cyclones and typhoons - tropical storms. Is climate change making this impact worse?",
-      "dialogue": [],
-      "phrases": "Every year we see damage, death and destruction caused by hurricanes, cyclones and typhoons - tropical storms. Is climate change making this impact worse?",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260903",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / How do we describe smells?",
-      "content": "What is your favourite smell?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260827",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Sharing the road with driverless cars",
-      "content": "Would you trust a robot to drive you around a city?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260820",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Who does the housework?",
-      "content": "When you were growing up, did your mum or dad do more household chores?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260813",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / How do climate scientists make predictions?",
-      "content": "What is the difference between a prediction and a projection?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260806",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / The Enhanced Games",
-      "content": "Would you watch a sport if you knew the athletes had taken drugs?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260730",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Children in warzones",
-      "content": "How does war affect children?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260723",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / What's in a footballer's brain?",
-      "content": "How do footballers cope with high-pressure scenarios like penalties and corners?",
-      "dialogue": [],
-      "phrases": "How do footballers cope with high-pressure scenarios like penalties and corners?",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260716",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - 6 Minute English / Should we cycle more?",
-      "content": "How often do you cycle?",
-      "dialogue": [],
-      "phrases": "",
-      "culturalTips": "日常口语，注意语音语调和自然表达",
-      "link": "https://www.bbc.co.uk/learningenglish/english/features/6-minute-english_2026/ep-260709",
-      "hot": true,
-      "createdAt": 1792570829094,
-      "pubDate": "2026-10-21T08:20:29.094Z"
+      "createdAt": 1792657398977
     }
   ],
   "listening": [
     {
+      "title": "TED: The Power of Vulnerability",
+      "category": "work",
+      "content": "Brené Brown discusses how vulnerability is the birthplace of innovation and creativity.",
+      "audioUrl": "",
+      "exercises": "听后回答：What is the main message of this talk?",
       "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Leave to one's own devices",
-      "content": "Do you like to be left to your own devices?",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-261019",
-      "exercises": "请听音频并尝试理解以下关键词：devices?",
       "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
+      "createdAt": 1792657411698
     },
     {
-      "source": "auto",
+      "title": "BBC: The English We Speak - \"A Piece of Cake\"",
       "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Try one's patience",
-      "content": "What tries your patience?",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-261012",
-      "exercises": "请听音频并尝试理解以下关键词：tries, patience?",
+      "content": "Learn what \"a piece of cake\" really means and how to use it in British English.",
+      "audioUrl": "",
+      "exercises": "请用 \"a piece of cake\" 造3个句子",
+      "source": "auto",
       "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
+      "createdAt": 1792657411698
     },
     {
+      "title": "VOA: Business English - Negotiation Skills",
+      "category": "work",
+      "content": "Key phrases and strategies for successful business negotiations in English.",
+      "audioUrl": "",
+      "exercises": "学习并练习商务谈判中的常用句型",
       "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Sack something off",
-      "content": "Learn a phrasal verb about cancelling plans",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-261005",
-      "exercises": "请听音频并尝试理解以下关键词：Learn, phrasal, about, cancelling, plans",
       "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
+      "createdAt": 1792657411698
     },
     {
-      "source": "auto",
+      "title": "BBC: 6 Minute English - Climate Change",
       "category": "daily",
-      "title": "BBC Learning English - The English We Speak / In a tizzy",
-      "content": "Learn an expression about being in a mild state of panic",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260928",
-      "exercises": "请听音频并尝试理解以下关键词：Learn, expression, about, being, state",
+      "content": "Discussion about climate change vocabulary and environmental terms.",
+      "audioUrl": "",
+      "exercises": "听后列出5个环境相关词汇",
+      "source": "auto",
       "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
+      "createdAt": 1792657411698
     },
     {
+      "title": "TED: How Great Leaders Inspire Action",
+      "category": "work",
+      "content": "Simon Sinek explains the Golden Circle concept.",
+      "audioUrl": "",
+      "exercises": "What is the Golden Circle? How does it apply to leadership?",
       "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Same person, different font",
-      "content": "They're so similar!",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260921",
-      "exercises": "请听音频并尝试理解以下关键词：They're, similar!",
       "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Hot take",
-      "content": "Hot take - learning a language is easy!",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260914",
-      "exercises": "请听音频并尝试理解以下关键词：learning, language, easy!",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Try it on",
-      "content": "Are they telling the truth or just trying it on?",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260907",
-      "exercises": "请听音频并尝试理解以下关键词：telling, truth, trying",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Non-starter",
-      "content": "Is your new idea a non-starter?",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260831",
-      "exercises": "请听音频并尝试理解以下关键词：non-starter?",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / No notes",
-      "content": "The singer’s performance was incredible – no notes!",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260824",
-      "exercises": "请听音频并尝试理解以下关键词：singer’s, performance, incredible, notes!",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Say less",
-      "content": "You want to stop working and grab coffee? Say less",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260817",
-      "exercises": "请听音频并尝试理解以下关键词：working, coffee?",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Share your life story",
-      "content": "I didn't ask for your life story!",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260810",
-      "exercises": "请听音频并尝试理解以下关键词：didn't, story!",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Keep yourself to yourself",
-      "content": "Don't keep yourself to yourself!",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260803",
-      "exercises": "请听音频并尝试理解以下关键词：Don't, yourself, yourself!",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / One size fits all",
-      "content": "When we say one size fits all, sometimes we mean it fits no-one. Learn how to use this expression here.",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260727",
-      "exercises": "请听音频并尝试理解以下关键词：sometimes, no-one., Learn, expression, here.",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Side quest",
-      "content": "Sometimes you want to do something different. Learn an expression to talk about that here.",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260720",
-      "exercises": "请听音频并尝试理解以下关键词：Sometimes, something, different., Learn, expression",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
-    },
-    {
-      "source": "auto",
-      "category": "daily",
-      "title": "BBC Learning English - The English We Speak / Passing ships",
-      "content": "Use this expression to talk about busy adult life",
-      "audioUrl": "https://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak_2026/ep-260713",
-      "exercises": "请听音频并尝试理解以下关键词：expression, about, adult",
-      "hot": true,
-      "createdAt": 1792570854768,
-      "pubDate": "2026-10-21T08:20:54.768Z"
+      "createdAt": 1792657411698
     }
   ],
   "vocab": [
@@ -372,7 +170,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "leverage",
@@ -382,7 +180,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "streamline",
@@ -392,7 +190,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "benchmark",
@@ -402,7 +200,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "stakeholder",
@@ -412,7 +210,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "scalable",
@@ -422,7 +220,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "pivot",
@@ -432,7 +230,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "agile",
@@ -442,7 +240,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "ROI",
@@ -452,7 +250,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "deliverable",
@@ -462,7 +260,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "resilient",
@@ -472,7 +270,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "eloquent",
@@ -482,7 +280,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "benevolent",
@@ -492,7 +290,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "whimsical",
@@ -502,7 +300,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "profound",
@@ -512,7 +310,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "versatile",
@@ -522,7 +320,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "subtle",
@@ -532,7 +330,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "meticulous",
@@ -542,7 +340,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "nostalgia",
@@ -552,7 +350,7 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     },
     {
       "word": "serendipity",
@@ -562,8 +360,8 @@
       "source": "auto",
       "status": "new",
       "hot": true,
-      "createdAt": 1792570866890
+      "createdAt": 1792657411699
     }
   ],
-  "fetchedAt": "2026-10-21T08:21:06.890Z"
+  "fetchedAt": "2026-10-22T08:23:31.699Z"
 }
